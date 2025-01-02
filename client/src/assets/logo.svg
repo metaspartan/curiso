@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <g fill="none" stroke-linecap="round">
+    <!-- Outer circle -->
+    <path 
+      d="M19 5a10 10 0 1 0 0 14"
+      stroke="white" 
+      stroke-width="1.5"
+    />
+    
+    <!-- Center node -->
+    <circle cx="12" cy="12" r="1.2" stroke="white" stroke-width="1.5" />
+    
+    <!-- Outer nodes -->
+    <circle cx="12" cy="6" r="1.2" stroke="white" stroke-width="1.5" />
+    <circle cx="17.2" cy="9" r="1.2" stroke="white" stroke-width="1.5" />
+    <circle cx="17.2" cy="15" r="1.2" stroke="white" stroke-width="1.5" />
+    <circle cx="12" cy="18" r="1.2" stroke="white" stroke-width="1.5" />
+    <circle cx="6.8" cy="15" r="1.2" stroke="white" stroke-width="1.5" />
+    <circle cx="6.8" cy="9" r="1.2" stroke="white" stroke-width="1.5" />
+    
+    <!-- Connecting lines -->
+    <line x1="12" y1="7.2" x2="12" y2="10.8" stroke="white" stroke-width="1.5" />
+    <line x1="16" y1="9.6" x2="13.2" y2="11.4" stroke="white" stroke-width="1.5" />
+    <line x1="16" y1="14.4" x2="13.2" y2="12.6" stroke="white" stroke-width="1.5" />
+    <line x1="12" y1="16.8" x2="12" y2="13.2" stroke="white" stroke-width="1.5" />
+    <line x1="8" y1="14.4" x2="10.8" y2="12.6" stroke="white" stroke-width="1.5" />
+    <line x1="8" y1="9.6" x2="10.8" y2="11.4" stroke="white" stroke-width="1.5" />
+  </g>
+</svg>

@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__controls-button {
+  border: none;
+  border-radius: 5px;
+  background: #3c3c3c;
+  border-bottom: 1px solid #2c2c2c;
+  margin-bottom: 5px;
+}
+
+.react-flow__controls-button svg {
+  fill: #fff;
+}
+
+.react-flow__controls-button:hover {
+  border: none;
+  border-radius: 5px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #1a1a1a;
+}

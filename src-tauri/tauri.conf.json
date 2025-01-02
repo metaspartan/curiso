@@ -1,0 +1,38 @@
+{
+    "identifier": "com.curiso.ai",
+    "productName": "Curiso AI",
+    "version": "1.0.0",
+    "build": {
+      "beforeBuildCommand": "npm run build",
+      "beforeDevCommand": "npm run dev",
+      "devUrl": "http://localhost:5173",
+        "frontendDist": "../dist"
+    },
+    "app": {
+      "security": {
+        "csp": "default-src 'self' 'unsafe-inline' http://localhost:* https://*"
+      },
+      "windows": [
+        {
+          "fullscreen": false,
+          "height": 800,
+          "resizable": true,
+          "title": "Curiso AI",
+          "width": 1200
+        }
+      ]
+    },
+    "bundle": {
+      "active": true,
+      "category": "DeveloperTool",
+      "copyright": "",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "targets": ["app", "deb", "dmg", "msi"]
+    }
+  }
