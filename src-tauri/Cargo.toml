@@ -1,6 +1,6 @@
 [package]
 name = "curiso-ai"
-version = "1.0.2"
+version = "1.0.3"
 description = "Curiso AI Desktop"
 authors = ["Carsen Klock"]
 license = "MIT"

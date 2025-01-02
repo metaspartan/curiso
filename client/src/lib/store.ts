@@ -11,7 +11,6 @@ const FALLBACK_KEY = import.meta.env.VITE_FALLBACK_KEY ?? 'default-fallback-key'
 
 const getSecureStorage = async () => {
   if (window.crypto.subtle) {
-    // console.log('Using secure storage');
     try {
       const encoder = new TextEncoder();
       const keyBuffer = await crypto.subtle.digest(
@@ -29,11 +28,6 @@ const getSecureStorage = async () => {
   return new SecureStorage({ password: FALLBACK_KEY });
 };
 
-interface StoreState {
-  settings: GlobalSettings;
-  setSettings: (settings: GlobalSettings) => void;
-}
-
 const defaultBoard = {
   id: nanoid(),
   name: 'Default Board',
@@ -41,35 +35,48 @@ const defaultBoard = {
   edges: []
 };
 
+const defaultSettings: GlobalSettings = {
+  primaryColor: themeColors[0].value,
+  boards: [defaultBoard],
+  currentBoardId: defaultBoard.id,
+  openai: { apiKey: '' },
+  xai: { apiKey: '' },
+  groq: { apiKey: '' },
+  openrouter: { apiKey: '' },
+  anthropic: { apiKey: '' },
+  google: { apiKey: '' },
+  customModels: defaultOllamaModels,
+  temperature: 0.7,
+  top_p: 0,
+  max_tokens: 8192,
+  frequency_penalty: 0,
+  presence_penalty: 0,
+  systemPrompt: '',
+  snapToGrid: false,
+  doubleClickZoom: true,
+  panOnDrag: true,
+  panOnScroll: false,
+  zoomOnScroll: true,
+  fitViewOnInit: true,
+  lastSelectedModel: 'chatgpt-4o-latest'
+};
+
+interface StoreState {
+  settings: GlobalSettings;
+  setSettings: (settings: GlobalSettings) => void;
+  clearAllData: () => Promise<void>;
+}
+
 export const useStore = create<StoreState>()(
   persist(
     (set) => ({
-      settings: {
-        primaryColor: themeColors[0].value,
-        boards: [defaultBoard],
-        currentBoardId: defaultBoard.id,
-        openai: { apiKey: '' },
-        xai: { apiKey: '' },
-        groq: { apiKey: '' },
-        openrouter: { apiKey: '' },
-        anthropic: { apiKey: '' },
-        google: { apiKey: '' },
-        customModels: defaultOllamaModels,
-        temperature: 0.7,
-        top_p: 0,
-        max_tokens: 8192,
-        frequency_penalty: 0,
-        presence_penalty: 0,
-        systemPrompt: '',
-        snapToGrid: false,
-        doubleClickZoom: true,
-        panOnDrag: true,
-        panOnScroll: false,
-        zoomOnScroll: true,
-        fitViewOnInit: true,
-        lastSelectedModel: 'chatgpt-4o-latest'
-      },
-      setSettings: (settings) => set({ settings })
+      settings: defaultSettings,
+      setSettings: (settings) => set({ settings }),
+      clearAllData: async () => {
+        const storage = await getSecureStorage();
+        storage.clear();
+        set({ settings: defaultSettings });
+      }
     }),
     {
       name: 'settings' as StorageKey,

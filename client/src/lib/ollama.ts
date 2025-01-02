@@ -41,5 +41,45 @@ export const defaultOllamaModels: CustomModel[] = [
     requiresAuth: false,
     maxTokens: 8192,
     thumbnailUrl: ollamaLogo
+  },
+  {
+    id: 'qwen2.5:1.5b',
+    name: 'qwen2.5:1.5b',
+    provider: 'openai',
+    description: 'Qwen 2.5 1.5B model running locally via Ollama',
+    endpoint: 'http://localhost:11434/v1',
+    requiresAuth: false,
+    maxTokens: 8192,
+    thumbnailUrl: ollamaLogo
+  },
+  {
+    id: 'qwen2.5:3b',
+    name: 'qwen2.5:3b',
+    provider: 'openai',
+    description: 'Qwen 2.5 3B model running locally via Ollama',
+    endpoint: 'http://localhost:11434/v1',
+    requiresAuth: false,
+    maxTokens: 8192,
+    thumbnailUrl: ollamaLogo
+  },
+  {
+    id: 'qwen2.5:7b',
+    name: 'qwen2.5:7b',
+    provider: 'openai',
+    description: 'Qwen 2.5 7B model running locally via Ollama',
+    endpoint: 'http://localhost:11434/v1',
+    requiresAuth: false,
+    maxTokens: 8192,
+    thumbnailUrl: ollamaLogo
+  },
+  {
+    id: 'phi-3.5',
+    name: 'phi-3.5',
+    provider: 'openai',
+    description: 'Phi 3.5 3.8B model running locally via Ollama',
+    endpoint: 'http://localhost:11434/v1',
+    requiresAuth: false,
+    maxTokens: 8192,
+    thumbnailUrl: ollamaLogo
   }
 ]

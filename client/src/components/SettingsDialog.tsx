@@ -20,7 +20,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CustomModel } from "@/lib/types";
 import { AddModelDialog } from "./AddModelDialog";
-import logo from "@/assets/logo.svg"
+import logo from "@/assets/logo.svg";
+import { ClearDataDialog } from "./ClearDataDialog";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -73,7 +74,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           
             <div className="flex justify-center">
             <img src={logo} alt="Curiso.ai" title="Curiso.ai" className="w-12 h-12" /></div>
-            <div className="flex justify-center"><p className="text-sm text-muted-foreground justify-center mb-2">Version v1.0.2 by Carsen Klock</p></div>
+            <div className="flex justify-center"><p className="text-sm text-muted-foreground justify-center mb-2">Version v1.0.3 by Carsen Klock</p></div>
             <strong>Curiso.ai</strong> is an infinite canvas for your thoughts—a platform that seamlessly connects nodes and AI services so you can explore ideas in depth without repeating yourself. By guiding the direction of each conversation, Curiso.ai empowers advanced users to unlock richer, more accurate AI interactions.
             </div>
             <div className="space-y-2 mt-2">
@@ -156,6 +157,17 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           }
         />
         <Label htmlFor="fit-view-on-init">Fit view on load</Label>
+      </div>
+      <div className="space-y-4 mt-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h4 className="text-sm font-medium">Clear All Data</h4>
+            <p className="text-sm text-muted-foreground text-gray-500">
+              Permanently delete all locally stored data
+            </p>
+          </div>
+          <ClearDataDialog />
+        </div>
       </div>
           </div>
           </TabsContent>
