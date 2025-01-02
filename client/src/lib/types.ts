@@ -125,10 +125,10 @@ export const availableModels: AIModel[] = [
     thumbnailUrl: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 841.89 595.28" fill="%234a9eff"%3E%3Cg%3E%3Cpolygon points="557.09,211.99 565.4,538.36 631.96,538.36 640.28,93.18"/%3E%3Cpolygon points="640.28,56.91 538.72,56.91 379.35,284.53 430.13,357.05"/%3E%3Cpolygon points="201.61,538.36 303.17,538.36 353.96,465.84 303.17,393.31"/%3E%3Cpolygon points="201.61,211.99 430.13,538.36 531.69,538.36 303.17,211.99"/%3E%3C/g%3E%3C/svg%3E'
   },
   {
-    id: 'grok-1-beta',
-    name: 'grok-1-beta',
+    id: 'grok-2-vision-1212',
+    name: 'grok-2-vision-1212',
     provider: 'xai',
-    description: 'Stable Grok model for general use',
+    description: 'Latest Grok 2 Vision model with enhanced capabilities',
     maxTokens: 8192,
     thumbnailUrl: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 841.89 595.28" fill="%234a9eff"%3E%3Cg%3E%3Cpolygon points="557.09,211.99 565.4,538.36 631.96,538.36 640.28,93.18"/%3E%3Cpolygon points="640.28,56.91 538.72,56.91 379.35,284.53 430.13,357.05"/%3E%3Cpolygon points="201.61,538.36 303.17,538.36 353.96,465.84 303.17,393.31"/%3E%3Cpolygon points="201.61,211.99 430.13,538.36 531.69,538.36 303.17,211.99"/%3E%3C/g%3E%3C/svg%3E'
   },

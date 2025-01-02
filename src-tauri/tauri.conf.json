@@ -1,7 +1,7 @@
 {
     "identifier": "com.curiso.ai",
     "productName": "Curiso AI",
-    "version": "1.0.3",
+    "version": "1.0.5",
     "build": {
       "beforeBuildCommand": "npm run build",
       "beforeDevCommand": "npm run dev",
