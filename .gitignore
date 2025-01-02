@@ -6,7 +6,6 @@ vite.config.ts.*
 *.tar.gz
 bun.lockb
 package-lock.json
-package.json
 pnpm-lock.yaml
 pnpm-workspace.yaml
 src-tauri/target
