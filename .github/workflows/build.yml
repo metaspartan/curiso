@@ -2,8 +2,6 @@ name: Build Curiso App
 on:
   push:
     branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
 
 jobs:
   build:
@@ -19,7 +17,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-            bun-version: latest
+          bun-version: latest
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -33,15 +31,29 @@ jobs:
       - name: Install frontend dependencies
         run: bun install
 
-      - name: Build Tauri app
+      - name: Setup macOS signing
+        if: matrix.platform == 'macos-latest'
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
+          p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+          keychain: build.keychain
+          keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           VITE_MASTER_KEY: ${{ secrets.VITE_MASTER_KEY }}
           VITE_FALLBACK_KEY: ${{ secrets.VITE_FALLBACK_KEY }}
         with:
           tagName: v__VERSION__
-          releaseName: 'Curiso AI v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
+          releaseName: "Curiso AI v__VERSION__"
+          releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: false

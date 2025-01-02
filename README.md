@@ -67,3 +67,11 @@ bun install
 ```bash
 bun run desktop
 ```
+
+## Known Issues
+
+- On Windows, you will get CORS errors when trying to connect to a local running Ollama instance. Run the command below in command prompt and restart Ollama to resolve this issue.
+
+```bash
+set OLLAMA_ORIGINS=*
+```
