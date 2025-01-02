@@ -1,7 +1,7 @@
 {
     "identifier": "com.curiso.ai",
     "productName": "Curiso AI",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "build": {
       "beforeBuildCommand": "npm run build",
       "beforeDevCommand": "npm run dev",
@@ -10,7 +10,7 @@
     },
     "app": {
       "security": {
-        "csp": "default-src 'self' 'unsafe-inline' http://localhost:* https://*"
+       "csp": "default-src 'self' 'unsafe-inline' http://localhost:* https://*; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'"
       },
       "windows": [
         {

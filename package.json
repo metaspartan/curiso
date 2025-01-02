@@ -1,6 +1,6 @@
 {
   "name": "curiso.ai",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "Carsen Klock",
   "type": "module",
   "license": "MIT",
@@ -9,7 +9,7 @@
     "build": "vite build",
     "check": "tsc",
     "desktop": "tauri dev",
-    "desktop:build": "tauri build"
+    "desktop:build": "tauri build --debug"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.33.1",

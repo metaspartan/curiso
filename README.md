@@ -2,6 +2,14 @@
 
 Curiso.ai is an infinite canvas for your thoughts—a platform that seamlessly connects nodes and AI services to explore ideas in depth without repeating yourself. By guiding the direction of each conversation, Curiso.ai empowers advanced users to unlock richer, more accurate AI interactions. Created by Carsen Klock.
 
+## Donate
+
+If you find Curiso.ai useful, please consider donating to support its development.
+
+Bitcoin (BTC) Address: bc1qgamupnnd2v0uj8a5cffyn8d25atahwq3wexue8
+
+Solana (SOL) Address: FLXQhZgyNGgNzE7MEniiHkrh3bs8kfHjd4J1L7KgBWso
+
 ## Features
 
 - **Infinite Canvas**: Create and organize your thoughts visually on an unlimited workspace
