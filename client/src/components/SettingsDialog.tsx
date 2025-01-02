@@ -74,7 +74,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           
             <div className="flex justify-center">
             <img src={logo} alt="Curiso.ai" title="Curiso.ai" className="w-12 h-12" /></div>
-            <div className="flex justify-center"><p className="text-sm text-muted-foreground justify-center mb-2">Version v1.0.5 by Carsen Klock</p></div>
+            <div className="flex justify-center"><p className="text-sm text-muted-foreground justify-center mb-2">Version v1.0.6 by Carsen Klock</p></div>
             <strong>Curiso.ai</strong> is an infinite canvas for your thoughts—a platform that seamlessly connects nodes and AI services so you can explore ideas in depth without repeating yourself. By guiding the direction of each conversation, Curiso.ai empowers advanced users to unlock richer, more accurate AI interactions.
             </div>
             <div className="space-y-2 mt-2">

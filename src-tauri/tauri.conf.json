@@ -1,7 +1,7 @@
 {
     "identifier": "com.curiso.ai",
     "productName": "Curiso AI",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "build": {
       "beforeBuildCommand": "npm run build",
       "beforeDevCommand": "npm run dev",
@@ -9,8 +9,10 @@
         "frontendDist": "../dist"
     },
     "app": {
+      "withGlobalTauri": true,
       "security": {
-       "csp": "default-src 'self' 'unsafe-inline' http://localhost:* https://*; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'"
+       "csp": "default-src 'self' 'unsafe-inline' http://localhost:* https://*; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:* http://localhost:* https://*",
+        "capabilities": []
       },
       "windows": [
         {
