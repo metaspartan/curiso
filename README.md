@@ -33,6 +33,7 @@ Solana (SOL) Address: FLXQhZgyNGgNzE7MEniiHkrh3bs8kfHjd4J1L7KgBWso
 - **Secure**: Local encrypted storage of API keys and sensitive chat data
 
 ![screenshot](screenshot.png)
+![screenshot2](screenshot2.png)
 
 ## Getting Started
 
