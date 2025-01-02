@@ -36,7 +36,7 @@ jobs:
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           VITE_MASTER_KEY: ${{ secrets.VITE_MASTER_KEY }}
           VITE_FALLBACK_KEY: ${{ secrets.VITE_FALLBACK_KEY }}
         with:
