@@ -12,7 +12,13 @@ Curiso AI is an infinite canvas for your thoughts—a platform that seamlessly c
   - xAI
   - Groq
   - OpenRouter
+
+- **Local AI Inference Provider Integration**:
   - Ollama
+  - Exo
+  - Jan.ai
+  - LM Studio
+
 - **Custom Model Support**: Add and configure custom AI models
 - **Inference Parameters**: Customize the inference parameters for your conversations
 - **Multiple Boards**: Create and manage multiple workspaces
@@ -28,6 +34,8 @@ Curiso AI is an infinite canvas for your thoughts—a platform that seamlessly c
 ![screenshot](screenshot.png)
 
 ![screenshot2](screenshot2.png)
+
+![screenshot3](custommodels.png)
 
 ## Donate
 
@@ -111,3 +119,6 @@ Carsen Klock - [@metaspartan](https://github.com/metaspartan) [@carsenklock](htt
 - [xAI](https://x.com/)
 - [Groq](https://www.groq.com/)
 - [OpenRouter](https://openrouter.ai/)
+- [Jan.ai](https://jan.ai/)
+- [LM Studio](https://lmstudio.ai/)
+- [Exo](https://github.com/exo-explore/exo)

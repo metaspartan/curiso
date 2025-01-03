@@ -13,13 +13,15 @@ import {
   import { CustomModel } from "@/lib/types";
   import { useStore } from "@/lib/store";
   import logo from "@/assets/logo.svg"
-  
+import { PRESET_ENDPOINTS } from "@/lib/constants";
+
   interface AddModelDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
   }
   
   export function AddModelDialog({ open, onOpenChange }: AddModelDialogProps) {
+    const [isCustomEndpoint, setIsCustomEndpoint] = useState(true);
     const { settings, setSettings } = useStore();
     const [newModel, setNewModel] = useState<Partial<CustomModel>>({
       provider: 'openai',
@@ -57,7 +59,77 @@ import {
           <div className="space-y-4">
             <div className="grid gap-4">
               <div className="space-y-2">
-                <Label>Model Details</Label>
+                <div className="space-y-2">
+                <Label>Endpoint Type</Label>
+                <Select
+                    value={newModel.endpoint || "custom"}
+                    onValueChange={(value) => {
+                        const preset = PRESET_ENDPOINTS.find(p => p.url === value);
+                        setIsCustomEndpoint(value === "custom");
+                        setNewModel({ 
+                          ...newModel, 
+                          endpoint: value === "custom" ? "" : value,
+                          name: preset && preset.name !== "Custom" ? `${preset.name} Model` : newModel.name,
+                          requiresAuth: preset?.name === "Custom"
+                        });
+                      }}
+                >
+                    <SelectTrigger>
+                    <SelectValue placeholder="Select endpoint type">
+                        {newModel.endpoint && (
+                        <div className="flex items-start gap-2">
+                            <img 
+                            src={PRESET_ENDPOINTS.find(p => p.url === newModel.endpoint)?.icon} 
+                            alt={PRESET_ENDPOINTS.find(p => p.url === newModel.endpoint)?.name} 
+                            className="w-5 h-5 object-contain"
+                            />
+                            <div className="flex flex-col">
+                            <span>{PRESET_ENDPOINTS.find(p => p.url === newModel.endpoint)?.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                                {PRESET_ENDPOINTS.find(p => p.url === newModel.endpoint)?.description}
+                            </span>
+                            </div>
+                        </div>
+                        )}
+                    </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                    {PRESET_ENDPOINTS.map((preset) => (
+                        <SelectItem key={preset.url} value={preset.url || "custom"}>
+                        <div className="flex items-center gap-2">
+                          <img 
+                            src={preset.icon} 
+                            alt={preset.name} 
+                            className="w-6 h-6 object-contain"
+                          />
+                          <div className="flex flex-col">
+                            <span>{preset.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {preset.description}
+                            </span>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                </div>
+
+                {isCustomEndpoint && (
+                <div className="space-y-2">
+                    <Label>Custom Endpoint URL</Label>
+                    <Input
+                    placeholder="https://localhost:11434/v1"
+                    value={newModel.endpoint}
+                    onChange={(e) => setNewModel({ 
+                        ...newModel, 
+                        endpoint: e.target.value 
+                    })}
+                    />
+                </div>
+                )}
+              </div>
+              <Label>Model Details</Label>
                 <Input
                   value={newModel.name || ''}
                   onChange={(e) => setNewModel({ ...newModel, name: e.target.value })}
@@ -68,12 +140,6 @@ import {
                   onChange={(e) => setNewModel({ ...newModel, id: e.target.value })}
                   placeholder="Model ID (llama3.2:1b)"
                 />
-                <Input
-                  value={newModel.endpoint || ''}
-                  onChange={(e) => setNewModel({ ...newModel, endpoint: e.target.value })}
-                  placeholder="API Endpoint (http://localhost:11434/v1)"
-                />
-              </div>
               <div className="space-y-2">
                 <Label>Provider</Label>
                 <Select

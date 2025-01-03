@@ -511,7 +511,7 @@ dependencies = [
 
 [[package]]
 name = "curiso-ai"
-version = "1.0.5"
+version = "1.0.8"
 dependencies = [
  "serde",
  "serde_json",

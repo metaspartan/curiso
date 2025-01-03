@@ -26,9 +26,9 @@ import { Copy, Check } from "lucide-react";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { NodeResizer } from 'reactflow';
 import Anthropic from '@anthropic-ai/sdk';
-import { DEFAULT_AI_SETTINGS, AISettings } from '@/lib/constants';
+import { DEFAULT_AI_SETTINGS, AISettings, PRESET_ENDPOINTS } from '@/lib/constants';
 import { ImageUpload } from "./ImageUpload";
-
+import logo from "@/assets/logo.svg";
 
 export function ChatNode({ id, data: initialData }: NodeProps) {
   const [input, setInput] = useState("");
@@ -565,10 +565,14 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
             <SelectTrigger className="w-[340px] h-8">
               <SelectValue placeholder="Select model">
                 <div className="flex items-center gap-2">
-                  <img
-                    src={currentModel?.thumbnailUrl}
-                    alt={currentModel?.name}
-                    className="w-4 h-4"
+                <img 
+                    src={
+                      currentModel && 'endpoint' in currentModel 
+                        ? PRESET_ENDPOINTS.find(p => p.url === currentModel.endpoint)?.icon || currentModel.thumbnailUrl || logo
+                        : currentModel?.thumbnailUrl || logo
+                    } 
+                    alt={currentModel?.name} 
+                    className="w-4 h-4" 
                   />
                   <span className="text-xs">{currentModel?.name}</span>
                 </div>
@@ -578,13 +582,21 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
             {[...availableModels, ...(settings.customModels || [])].map((m) => (
               <SelectItem key={m.id} value={m.id}>
                 <div className="flex items-center gap-2">
-                  <img src={m.thumbnailUrl} alt={m.name} className="w-4 h-4" />
+                  <img 
+                    src={
+                      'endpoint' in m 
+                        ? PRESET_ENDPOINTS.find(p => p.url === m.endpoint)?.icon || m.thumbnailUrl || logo
+                        : m.thumbnailUrl || logo
+                    } 
+                    alt={m.name} 
+                    className="w-4 h-4" 
+                  />
                   <span>{m.name}</span>
                   {'endpoint' in m && <span className="text-xs text-muted-foreground">(Custom)</span>}
                 </div>
               </SelectItem>
             ))}
-            </SelectContent>
+          </SelectContent>
           </Select>
           <div className="flex gap-1">
           <Button
