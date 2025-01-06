@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AIModel, APIResponseMetrics, CustomModel, Message, availableModels } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, sanitizeChatMessages } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { Copy, Check } from "lucide-react";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -278,10 +278,11 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
         const response = await anthropic.messages.create({
           model: model,
           system: enhancedSystemPrompt,
-          messages: allMessages.map(msg => ({
+          messages: 
+          sanitizeChatMessages(allMessages.map(msg => ({
             role: msg.role === "user" ? "user" : "assistant",
             content: msg.content
-          })),
+          }))),
           max_tokens: 8192,
           ...filterAnthropicAISettings(settings),
         });
@@ -324,11 +325,11 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
           },
           body: JSON.stringify({
             model,
-            messages: [
+            messages: sanitizeChatMessages([
               { role: 'system', content: enhancedSystemPrompt },
               ...allMessages.slice(0, -1),
               { role: "user", content: messageContent }
-            ].filter(m => m.content),
+            ]).filter(m => m.content),
             // we shouldnt pass any of these unless they are changed from the defaults
             ...filterAISettings(settings),
           }),

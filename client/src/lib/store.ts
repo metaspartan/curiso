@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, type StorageValue } from 'zustand/middleware';
-import type { GlobalSettings } from './types';
+import type { CustomModel, GlobalSettings } from './types';
 import { SecureStorage, StorageKey } from './secureStorage';
 import { nanoid } from 'nanoid';
 import { themeColors } from './constants';
@@ -129,6 +129,7 @@ interface StoreState {
   settings: GlobalSettings;
   setSettings: (settings: GlobalSettings) => void;
   clearAllData: () => Promise<void>;
+  updateCustomModels: (models: CustomModel[]) => void;
 }
 
 export const useStore = create<StoreState>()(
@@ -136,6 +137,12 @@ export const useStore = create<StoreState>()(
     (set) => ({
       settings: defaultSettings,
       setSettings: (settings) => set({ settings }),
+      updateCustomModels: (models) => set((state) => ({
+        settings: {
+          ...state.settings,
+          customModels: models
+        }
+      })),
       clearAllData: async () => {
         const storage = await getSecureStorage();
         storage.clear();
