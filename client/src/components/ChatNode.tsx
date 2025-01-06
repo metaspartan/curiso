@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AIModel, CustomModel, Message, availableModels } from "@/lib/types";
+import { AIModel, APIResponseMetrics, CustomModel, Message, availableModels } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { Copy, Check } from "lucide-react";
@@ -29,6 +29,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { DEFAULT_AI_SETTINGS, AISettings, PRESET_ENDPOINTS } from '@/lib/constants';
 import { ImageUpload } from "./ImageUpload";
 import logo from "@/assets/logo.svg";
+import { RAGService } from "@/lib/rag";
+import { FileUpload } from "./FileUpload";
+import { encode } from "gpt-tokenizer";
 
 export function ChatNode({ id, data: initialData }: NodeProps) {
   const [input, setInput] = useState("");
@@ -44,6 +47,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({});
   const [imageData, setImageData] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
 
   const copyToClipboard = async (text: string, id: string) => {
     // console.log('Attempting to copy text:', text);
@@ -173,6 +177,9 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
   const sendMessage = useCallback(async () => {
     if (!input.trim()) return;
 
+    const startTime = performance.now();
+    let metrics: APIResponseMetrics = {};
+
     const newMessage: Message = {
       role: "user",
       content: input,
@@ -184,6 +191,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     setImageData(null);
     setPreviewImage(null);
     setIsLoading(true);
+    setUploadedFileName(null);
 
     const selectedModel = [...availableModels, ...(settings.customModels || [])].find((m) => m.id === model);
     if (!selectedModel) {
@@ -209,6 +217,35 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
       return;
     }
 
+    let context = '';
+    if (settings.rag?.enabled) {
+      console.log("RAG enabled, searching for:", input);
+      // Get relevant context from RAG
+      const ragService = new RAGService();
+      const relevantDocs = await ragService.search(input);
+
+      console.log("Relevant docs, Search results:", relevantDocs);
+      
+      if (relevantDocs.length > 0) {
+        context = relevantDocs
+          .map(doc => {
+            const metadata = typeof doc.metadata === 'string' 
+              ? JSON.parse(doc.metadata) 
+              : doc.metadata;
+            console.log("Processing doc metadata:", metadata);
+            return `[From ${metadata.filename}]: ${doc.content}`;
+          })
+          .join('\n\n');
+      }
+    }
+
+    // Add context to system prompt if available
+    const enhancedSystemPrompt = context 
+      ? `${settings.systemPrompt}\n\nRelevant context for your response:\n${context}`
+      : settings.systemPrompt;
+
+    console.log("Enhanced system prompt:", enhancedSystemPrompt);
+
     try {
       
       const contextMessages = getContextFromSourceNodes();
@@ -228,7 +265,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
       
         const response = await anthropic.messages.create({
           model: model,
-          system: settings.systemPrompt,
+          system: enhancedSystemPrompt,
           messages: allMessages.map(msg => ({
             role: msg.role === "user" ? "user" : "assistant",
             content: msg.content
@@ -236,13 +273,30 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
           max_tokens: 8192,
           ...filterAnthropicAISettings(settings),
         });
-      
+
+        metrics = {
+          completion_tokens: response.usage?.output_tokens,
+          prompt_tokens: response.usage?.input_tokens,
+          total_tokens: response.usage?.input_tokens + response.usage?.output_tokens,
+          model: response.model
+        };
+  
+        const endTime = performance.now();
+        const totalTime = (endTime - startTime) / 1000;
+  
         const assistantMessage: Message = {
           role: "assistant",
           content: response.content[0].text,
+          metrics: {
+            tokensPerSecond: metrics.completion_tokens ? metrics.completion_tokens / totalTime : undefined,
+            totalTokens: metrics.completion_tokens,
+            totalTime
+          }
         };
-      
+
         setMessages((prev) => [...prev, assistantMessage]);
+
+        
       } else {
         const messageContent = imageData
         ? [
@@ -259,7 +313,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
           body: JSON.stringify({
             model,
             messages: [
-              { role: 'system', content: settings.systemPrompt },
+              { role: 'system', content: enhancedSystemPrompt },
               ...allMessages.slice(0, -1),
               { role: "user", content: messageContent }
             ].filter(m => m.content),
@@ -279,15 +333,36 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
           throw new Error("Invalid response format from API");
         }
   
+        // const assistantMessage: Message = {
+        //   role: "assistant",
+        //   content: result.choices[0].message.content,
+        // };
+
+        metrics = {
+          completion_tokens: result.usage?.completion_tokens,
+          prompt_tokens: result.usage?.prompt_tokens,
+          total_tokens: result.usage?.total_tokens,
+          model: result.model
+        };
+  
+        const endTime = performance.now();
+        const totalTime = (endTime - startTime) / 1000;
+  
         const assistantMessage: Message = {
           role: "assistant",
           content: result.choices[0].message.content,
+          metrics: {
+            tokensPerSecond: metrics.completion_tokens ? metrics.completion_tokens / totalTime : undefined,
+            totalTokens: metrics.completion_tokens,
+            totalTime
+          }
         };
   
         setMessages((prev) => [...prev, assistantMessage]);
         setInput("");
         setImageData(null);
         setPreviewImage(null);
+        setUploadedFileName(null);
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -302,6 +377,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
       setPreviewImage(null);
       setImageData(null); 
       setIsLoading(false);
+      setUploadedFileName(null);
     }
   }, [input, messages, model, settings, getContextFromSourceNodes, toast]);
 
@@ -474,6 +550,13 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
               >
                 {msg.content}
               </ReactMarkdown>
+              {msg.role === "assistant" && msg.metrics && (
+                <div className="text-xs text-gray-500 mt-1">
+                  {msg.metrics.totalTokens && `${msg.metrics.totalTokens} tokens`}
+                  {msg.metrics.tokensPerSecond && ` · ${msg.metrics.tokensPerSecond.toFixed(1)} tok/s`}
+                  {msg.metrics.totalTime && ` · ${msg.metrics.totalTime.toFixed(2)}s`}
+                </div>
+              )}
             </div>
           ))}
         </div>

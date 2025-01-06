@@ -5,7 +5,9 @@ import { SecureStorage, StorageKey } from './secureStorage';
 import { nanoid } from 'nanoid';
 import { themeColors } from './constants';
 import { defaultOllamaModels } from './ollama';
+import { VectorDB } from './db';
 
+const STORE_VERSION = 2;
 const MASTER_KEY = import.meta.env.VITE_MASTER_KEY ?? 'default-master-key';
 const FALLBACK_KEY = import.meta.env.VITE_FALLBACK_KEY ?? 'default-fallback-key';
 
@@ -36,6 +38,17 @@ const defaultBoard = {
 };
 
 const defaultSettings: GlobalSettings = {
+  version: STORE_VERSION,
+  rag: {
+    enabled: false,
+    similarityThreshold: 0.1,
+    chunkSize: 1000,
+    documents: [],
+    websites: [],
+    supportedModels: [],
+    embeddingModel: 'Xenova/bge-base-en-v1.5',
+    modelStatus: 'unloaded'
+  },
   primaryColor: themeColors[0].value,
   boards: [defaultBoard],
   currentBoardId: defaultBoard.id,
@@ -61,6 +74,57 @@ const defaultSettings: GlobalSettings = {
   lastSelectedModel: 'chatgpt-4o-latest'
 };
 
+// Migration functions for each version
+const migrations = {
+  0: (state: any) => ({
+    ...defaultSettings,
+    ...state,
+    version: 1,
+    rag: {
+      ...defaultSettings.rag,
+      ...state.rag,
+      websites: state.rag?.websites || []
+    }
+  }),
+  1: (state: any) => ({
+    ...state,
+    version: 2,
+    rag: {
+      ...state.rag,
+      documents: state.rag?.documents?.map((doc: any) => ({
+        ...doc,
+        metrics: doc.metrics || {}
+      })) || [],
+      websites: state.rag?.websites || []
+    }
+  })
+};
+
+const migrateStore = (persistedState: any): any => {
+  // Handle old store format where settings were directly in state
+  let state = persistedState?.settings || persistedState;
+  
+  // If no version, start from 0 and merge with default settings to ensure all fields exist
+  if (!state.version) {
+    console.log('Migrating legacy store without version');
+    state = {
+      ...defaultSettings,
+      ...state,
+      version: 0
+    };
+  }
+  
+  // Apply all migrations sequentially
+  for (let v = state.version; v < STORE_VERSION; v++) {
+    if (migrations[v as keyof typeof migrations]) {
+      console.log(`Migrating store from version ${v} to ${v + 1}`);
+      state = migrations[v as keyof typeof migrations](state);
+    }
+  }
+
+  return { settings: state };
+};
+
 interface StoreState {
   settings: GlobalSettings;
   setSettings: (settings: GlobalSettings) => void;
@@ -75,6 +139,8 @@ export const useStore = create<StoreState>()(
       clearAllData: async () => {
         const storage = await getSecureStorage();
         storage.clear();
+        const db = new VectorDB();
+        await db.clearAll();
         set({ settings: defaultSettings });
       }
     }),
@@ -84,7 +150,16 @@ export const useStore = create<StoreState>()(
         getItem: async (name) => {
           try {
             const storage = await getSecureStorage();
-            return storage.getItem<StorageValue<StoreState>>(name as StorageKey);
+            const data = await storage.getItem<StorageValue<StoreState>>(name as StorageKey);
+            
+            if (data) {
+              const migratedState = migrateStore(data.state);
+              return {
+                ...data,
+                state: migratedState
+              };
+            }
+            return null;
           } catch (e) {
             console.error('Storage getItem failed:', e);
             return null;

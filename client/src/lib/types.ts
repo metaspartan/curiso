@@ -6,6 +6,50 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   image_url?: string;
+  metrics?: {
+    tokensPerSecond?: number;
+    timeToFirstToken?: number;
+    totalTokens?: number;
+    totalTime?: number;
+  };
+}
+
+export interface APIResponseMetrics {
+  completion_tokens?: number;
+  prompt_tokens?: number;
+  total_tokens?: number;
+  model?: string;
+}
+
+interface RAGDocument {
+  id: string;
+  filename: string;
+  timestamp: string;
+  size: number;
+  chunks: {
+    id: string;
+    content: string;
+    embedding: Float32Array;
+  }[];
+}
+
+export interface RAGWebsite {
+  id: string;
+  url: string;
+  title: string;
+  dateScraped: string;
+}
+
+export interface RAGSettings {
+  enabled: boolean;
+  documents: RAGDocument[];
+  websites: RAGWebsite[];
+  similarityThreshold: number;
+  chunkSize: number;
+  supportedModels: string[];
+  embeddingModel: string;
+  modelStatus: 'unloaded' | 'loading' | 'loaded' | 'error';
+  modelError?: string;
 }
 
 export interface Board {
@@ -36,6 +80,8 @@ export interface CustomModel extends AIModel {
 }
 
 export interface GlobalSettings {
+  version: number;
+  rag: RAGSettings;
   primaryColor: string;
   boards: Board[];
   customModels: CustomModel[];

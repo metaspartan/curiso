@@ -1,5 +1,8 @@
 # Curiso.ai
 
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/metaspartan/curiso/total) ![GitHub License](https://img.shields.io/github/license/metaspartan/curiso) ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/metaspartan/curiso/build.yml) ![GitHub Tag](https://img.shields.io/github/v/tag/metaspartan/curiso)
+
+
 Curiso AI is an infinite canvas for your thoughts—a platform that seamlessly connects nodes and AI services to explore ideas in depth without repeating yourself. By guiding the direction of each conversation, Curiso.ai empowers advanced users to unlock richer, more accurate AI interactions. Created by Carsen Klock.
 
 ## Features
@@ -20,6 +23,8 @@ Curiso AI is an infinite canvas for your thoughts—a platform that seamlessly c
   - LM Studio
 
 - **Custom Model Support**: Add and configure custom AI models
+- **Model Metrics**: View metrics for models like tok/sec and total tokens
+- **RAG Support (Retrieval Augmented Generation)**: Add and configure RAG PDF documents and websites locally
 - **Inference Parameters**: Customize the inference parameters for your conversations
 - **Multiple Boards**: Create and manage multiple workspaces
 - **Vision Model Support**: Add images to your chats for vision models

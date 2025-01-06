@@ -20,6 +20,13 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          transformers: ['@xenova/transformers'],
+        },
+      },
+    },
   },
   server: {
     port: 5173,

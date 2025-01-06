@@ -1,7 +1,7 @@
 {
     "identifier": "com.curiso.ai",
     "productName": "Curiso AI",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "build": {
       "beforeBuildCommand": "npm run build",
       "beforeDevCommand": "npm run dev",
@@ -11,8 +11,36 @@
     "app": {
       "withGlobalTauri": true,
       "security": {
-       "csp": "default-src 'self' 'unsafe-inline' http://localhost:* https://*; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:* http://localhost:* https://*",
-        "capabilities": []
+       "csp": "default-src 'self' 'unsafe-inline' http://localhost:* https://*; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:* http://localhost:* https://* http://*",
+       "capabilities": [
+        {
+          "identifier": "fetch",
+          "windows": ["main"],
+          "permissions": [
+              "http:default",
+              {
+                "identifier": "http:default",
+                "allow": [
+                  {
+                    "url": "http://**"
+                  },
+                  {
+                    "url": "https://**"
+                  },
+                  {
+                    "url": "http://*:*"
+                  },
+                  {
+                    "url": "https://*:*"
+                  }
+                ]
+              }
+            ],
+          "scope": {
+            "url": ["*", "http://*", "https://*", "http://*/*", "https://*/*", "https://mythrel.com/*"]
+          }
+        }
+      ]
       },
       "windows": [
         {
@@ -37,5 +65,5 @@
         "icons/icon.ico"
       ],
       "targets": ["app", "deb", "dmg", "msi"]
-    }
+    }    
   }

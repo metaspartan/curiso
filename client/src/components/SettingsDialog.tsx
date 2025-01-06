@@ -22,6 +22,7 @@ import { CustomModel } from "@/lib/types";
 import { AddModelDialog } from "./AddModelDialog";
 import logo from "@/assets/logo.svg";
 import { ClearDataDialog } from "./ClearDataDialog";
+import { RAGManager } from "./RAGManager";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -61,20 +62,23 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           <DialogTitle>Global Settings</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue="settings">
-          <TabsList>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="api">API Keys</TabsTrigger>
-            <TabsTrigger value="custom-models">Custom Models</TabsTrigger>
-            <TabsTrigger value="parameters">Inference Parameters</TabsTrigger>
-          </TabsList>
-
+          <div className="flex justify-center mb-4">
+            <TabsList>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+              <TabsTrigger value="api">API Keys</TabsTrigger>
+              <TabsTrigger value="custom-models">Custom Models</TabsTrigger>
+              <TabsTrigger value="parameters">Inference Params</TabsTrigger>
+              <TabsTrigger value="rag">RAG</TabsTrigger>
+            </TabsList>
+          </div>
           <TabsContent value="settings" className="space-y-4">
+            
           <div className="grid gap-4">
           <div className="space-y-2 mt-2">
           
             <div className="flex justify-center">
             <img src={logo} alt="Curiso.ai" title="Curiso.ai" className="w-12 h-12" /></div>
-            <div className="flex justify-center"><p className="text-sm text-muted-foreground justify-center mb-2">Version v1.0.8 by Carsen Klock</p></div>
+            <div className="flex justify-center"><p className="text-sm text-muted-foreground justify-center mb-2">Version v1.0.9 by Carsen Klock</p></div>
             <strong>Curiso.ai</strong> is an infinite canvas for your thoughts—a platform that seamlessly connects nodes and AI services so you can explore ideas in depth without repeating yourself. By guiding the direction of each conversation, Curiso.ai empowers advanced users to unlock richer, more accurate AI interactions.
             </div>
             <div className="space-y-2 mt-2">
@@ -172,9 +176,20 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </div>
           </TabsContent>
 
-          <TabsContent value="api" className="space-y-4">
+          <TabsContent value="rag" className="space-y-4">
             <div className="grid gap-4">
-              <div className="space-y-2 mt-2">
+              <div className="space-y-2">
+                <Card className="p-4">
+                <RAGManager />
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="api" className="space-y-4">
+          <Card className="p-4">
+            <div className="grid gap-4">
+
                 <Label htmlFor="openaiKey">OpenAI API Key</Label>
                 <Input
                   id="openaiKey"
@@ -187,7 +202,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     })
                   }
                 />
-              </div>
+           
 
               <div className="space-y-2">
                 <Label htmlFor="anthropicKey">Anthropic API Key</Label>
@@ -263,6 +278,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 />
               </div>
             </div>
+          </Card>
           </TabsContent>
 
           <TabsContent value="custom-models" className="space-y-4">
@@ -350,8 +366,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </TabsContent>
 
           <TabsContent value="parameters" className="space-y-4">
+          <Card className="p-4">
           <div className="grid gap-4">
-          <div className="space-y-2 mt-2">
+
             <Label>System Prompt</Label>
             <Textarea
               value={settings.systemPrompt}
@@ -360,7 +377,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               }
               placeholder="Enter system prompt..."
             />
-          </div>
+       
 
           <div className="space-y-2">
             <Label>Max Tokens</Label>
@@ -431,6 +448,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             />
           </div>
             </div>
+            </Card>
         </TabsContent>
         </Tabs>
       </DialogContent>
