@@ -11,7 +11,7 @@
     "app": {
       "withGlobalTauri": true,
       "security": {
-       "csp": "default-src 'self' 'unsafe-inline' http://localhost:* https://*; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:* http://localhost:* https://* http://*",
+       "csp": "default-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' http://localhost:* https://*; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:* http://localhost:* https://* http://*",
        "capabilities": [
         {
           "identifier": "fetch",
