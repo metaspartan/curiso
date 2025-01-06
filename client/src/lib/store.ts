@@ -4,7 +4,7 @@ import type { GlobalSettings } from './types';
 import { SecureStorage, StorageKey } from './secureStorage';
 import { nanoid } from 'nanoid';
 import { themeColors } from './constants';
-import { defaultOllamaModels } from './ollama';
+import { defaultLocalModels } from './localmodels';
 import { VectorDB } from './db';
 
 const STORE_VERSION = 2;
@@ -58,7 +58,7 @@ const defaultSettings: GlobalSettings = {
   openrouter: { apiKey: '' },
   anthropic: { apiKey: '' },
   google: { apiKey: '' },
-  customModels: defaultOllamaModels,
+  customModels: defaultLocalModels,
   temperature: 0.7,
   top_p: 0,
   max_tokens: 8192,

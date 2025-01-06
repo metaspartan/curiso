@@ -85,9 +85,6 @@ import { PRESET_ENDPOINTS } from "@/lib/constants";
                             />
                             <div className="flex flex-col">
                             <span>{PRESET_ENDPOINTS.find(p => p.url === newModel.endpoint)?.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                                {PRESET_ENDPOINTS.find(p => p.url === newModel.endpoint)?.description}
-                            </span>
                             </div>
                         </div>
                         )}
@@ -96,17 +93,17 @@ import { PRESET_ENDPOINTS } from "@/lib/constants";
                     <SelectContent>
                     {PRESET_ENDPOINTS.map((preset) => (
                         <SelectItem key={preset.url} value={preset.url || "custom"}>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-start gap-2">
                           <img 
                             src={preset.icon} 
                             alt={preset.name} 
-                            className="w-6 h-6 object-contain"
+                            className="w-5 h-5 object-contain"
                           />
                           <div className="flex flex-col">
                             <span>{preset.name}</span>
-                            <span className="text-xs text-muted-foreground">
+                            {/* <span className="text-xs text-muted-foreground">
                               {preset.description}
-                            </span>
+                            </span> */}
                           </div>
                         </div>
                       </SelectItem>

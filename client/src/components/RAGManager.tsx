@@ -10,6 +10,7 @@ import { RAGService } from "@/lib/rag";
 import { Trash2, Upload } from "lucide-react";
 import { embeddingService } from "@/lib/embeddings";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 interface EmbeddingProgress {
   status: 'idle' | 'loading' | 'chunking' | 'embedding' | 'complete' | 'error';
@@ -19,9 +20,27 @@ interface EmbeddingProgress {
 }
 
 const EMBEDDING_MODELS = [
-  { id: 'Xenova/bge-base-en-v1.5', name: 'BGE Base', size: '110MB' },
-  { id: 'Xenova/bge-small-en-v1.5', name: 'BGE Small', size: '50MB' },
-  { id: 'Xenova/bge-large-en-v1.5', name: 'BGE Large', size: '330MB' }
+  // HuggingFace embedding models
+  { id: 'Xenova/bge-base-en-v1.5', name: 'BGE Base English', size: '436MB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/bge-small-en-v1.5', name: 'BGE Small English', size: '133MB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/bge-large-en-v1.5', name: 'BGE Large English', size: '1.34GB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/nomic-embed-text-v1', name: 'Nomic Embed Text v1', size: '550MB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/gte-small', name: 'GTE Small', size: '133MB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/gte-large', name: 'GTE Large', size: '1.34GB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/GIST-small-Embedding-v0', name: 'GIST Small', size: '133MB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/ernie-3.0-nano-zh', name: 'ERNIE 3.0 Nano Chinese', size: '72MB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/ernie-3.0-micro-zh', name: 'ERNIE 3.0 Micro Chinese', size: '94MB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/ernie-3.0-mini-zh', name: 'ERNIE 3.0 Mini Chinese', size: '107MB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/all-roberta-large-v1', name: 'Roberta Large', size: '1.42GB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/jina-embeddings-v2-base-en', name: 'Jina Embeddings v2 Base English', size: '547MB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/jina-embeddings-v2-small-en', name: 'Jina Embeddings v2 Small English', size: '130MB', type: 'local', device: 'auto', dtype: 'fp32' },
+  { id: 'Xenova/jina-embeddings-v2-base-zh', name: 'Jina Embeddings v2 Base Chinese', size: '641MB', type: 'local', device: 'auto', dtype: 'fp32' },
+
+  // { id: 'jinaai/jina-embeddings-v3', name: 'Jina Embeddings v3', size: '2.29GB', type: 'local', device: 'auto', dtype: 'fp16' },
+
+  // OpenAI models (requires API key)
+  { id: 'text-embedding-3-small', name: 'OpenAI Embedding 3 Small', size: '', type: 'api' },
+  { id: 'text-embedding-3-large', name: 'OpenAI Embedding 3 Large', size: '', type: 'api' },
 ];
 
 export function RAGManager() {
@@ -109,9 +128,20 @@ export function RAGManager() {
       }
     }
   };
+  const isApiModel = (modelId: string) => modelId.startsWith('text-embedding-3');
 
   const handleModelChange = async (modelId: string) => {
     try {
+      // Check for API key if needed
+      if (isApiModel(modelId) && !settings.openai.apiKey) {
+        toast({
+          title: "API Key Required",
+          description: "Please configure your OpenAI API key in settings first.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Update UI immediately
       useStore.setState({
         settings: {
@@ -252,6 +282,23 @@ export function RAGManager() {
     }
   };
 
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let url = e.target.value;
+    
+    // If user is typing and hasn't included a protocol, don't modify input
+    if (!url.includes('://')) {
+      setUrlInput(url);
+      return;
+    }
+    
+    // When pasting or finishing input, ensure https:// is present
+    if (!url.match(/^https?:\/\//)) {
+      url = 'https://' + url;
+    }
+    
+    setUrlInput(url);
+  };
+
   return (
     <div className="space-y-6">
                 <p className="text-sm text-muted-foreground">
@@ -320,7 +367,7 @@ export function RAGManager() {
     <SelectContent>
       {EMBEDDING_MODELS.map(model => (
         <SelectItem key={model.id} value={model.id}>
-          {model.name} ({model.size})
+          {model.name} {model.type === 'local' && `(${model.size})`} {model.type === 'api' && '(Requires API Key)'}
         </SelectItem>
       ))}
     </SelectContent>
@@ -348,13 +395,18 @@ export function RAGManager() {
           <label className="text-sm font-medium">Documents & Websites</label>
           <div className="mt-2">
           <div className="flex gap-2">
-            <Input
-              type="url"
-              placeholder="Enter website URL"
-              value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
-              disabled={isUploading}
-            />
+          <Input
+            type="url"
+            placeholder="Enter website URL"
+            value={urlInput}
+            onChange={handleUrlChange}
+            onBlur={() => {
+              if (urlInput && !urlInput.match(/^https?:\/\//)) {
+                setUrlInput('https://' + urlInput);
+              }
+            }}
+            disabled={isUploading}
+          />
             <Button 
               onClick={handleAddWebsite}
               disabled={isUploading || !urlInput}
@@ -362,8 +414,6 @@ export function RAGManager() {
               Add Website
             </Button>
           </div>
-          
-        
           
           <Input
             type="file"
@@ -379,18 +429,14 @@ export function RAGManager() {
               {uploadingDocs.map(docId => (
                 <div key={docId} className="flex items-center justify-between p-2 border rounded">
                   <div className="flex-1">
-                    <p className="text-sm">Uploading...</p>
+                    <p className="text-sm">Embedding...</p>
                     {progress[docId] && (
                       <div className="mt-2">
                         <Progress 
                           value={
-                            progress[docId].status === 'embedding'
-                              ? (progress[docId].currentChunk / progress[docId].totalChunks) * 100
-                              : progress[docId].status === 'loading'
-                              ? 20
-                              : progress[docId].status === 'chunking'
-                              ? 40
-                              : 0
+                       
+                             (progress[docId].currentChunk / progress[docId].totalChunks) * 100
+                              
                           }
                         />
                         <p className="text-xs text-muted-foreground mt-1">

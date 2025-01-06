@@ -21,7 +21,7 @@ export interface APIResponseMetrics {
   model?: string;
 }
 
-interface RAGDocument {
+export interface RAGDocument {
   id: string;
   filename: string;
   timestamp: string;

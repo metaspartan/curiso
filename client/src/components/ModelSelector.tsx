@@ -7,6 +7,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Info } from "lucide-react";
 import logo from "@/assets/logo.svg"
 import { PRESET_ENDPOINTS } from "@/lib/constants";
+import { modelService } from "@/lib/localmodels";
+import { defaultLocalModels } from "@/lib/localmodels";
+import { useEffect } from "react";
+
 interface ModelSelectorProps {
   models: AIModel[];
   selectedModel: string;
@@ -15,6 +19,7 @@ interface ModelSelectorProps {
 
 export function ModelSelector({ models, selectedModel, onSelect }: ModelSelectorProps) {
   const settings = useStore((state) => state.settings);
+  const setSettings = useStore((state) => state.setSettings);
   const allModels = [...models, ...(settings.customModels || [])];
 
   const getEndpointIcon = (model: AIModel | CustomModel) => {

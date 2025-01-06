@@ -49,7 +49,7 @@ export class RAGService {
         ...metadata,
         chunkId,
         documentId: metadata.id,
-        type: 'rag-chunk',
+        type: 'document',
         pageNumber,
         source: metadata.filename 
       });
@@ -98,7 +98,7 @@ export class RAGService {
         ...enhancedMetadata,
         chunkId,
         documentId,
-        type: 'rag-chunk',
+        type: 'website',
         source: new URL(url).hostname || url
       });
       chunkIds.push(chunkId);

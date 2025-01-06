@@ -32,6 +32,8 @@ import logo from "@/assets/logo.svg";
 import { RAGService } from "@/lib/rag";
 import { FileUpload } from "./FileUpload";
 import { encode } from "gpt-tokenizer";
+import { defaultLocalModels } from "@/lib/localmodels";
+import { modelService } from "@/lib/localmodels";
 
 export function ChatNode({ id, data: initialData }: NodeProps) {
   const [input, setInput] = useState("");
@@ -174,6 +176,15 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
            "";
   };
 
+  const formatSource = (metadata: any) => {
+    console.log("Formatting source:", metadata);
+    console.log("Type:", metadata.type);
+    if (metadata.type === 'website') {
+      return metadata.source;
+    }
+    return metadata.filename;
+  };
+
   const sendMessage = useCallback(async () => {
     if (!input.trim()) return;
 
@@ -232,8 +243,9 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
             const metadata = typeof doc.metadata === 'string' 
               ? JSON.parse(doc.metadata) 
               : doc.metadata;
-            console.log("Processing doc metadata:", metadata);
-            return `[From ${metadata.filename}]: ${doc.content}`;
+            console.log("Processing metadata:", metadata);
+            const source = formatSource(metadata);
+            return `[From ${source}]: ${doc.content}`;
           })
           .join('\n\n');
       }

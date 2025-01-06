@@ -6,14 +6,17 @@ class EmbeddingService {
   private model: any;
   private initialized: boolean = false;
   private modelId: string = 'Xenova/bge-base-en-v1.5';
+  private isApiModel: boolean = false;
+  private device: string = 'auto';
+  private dtype: string = 'fp32';
 
   private constructor() {
     env.useBrowserCache = true;
     
-    // Prefer WebGPU if available
-    if ('gpu' in navigator) {
-      env.backends.onnx.preferredBackend = 'webgpu';
-    }
+    // // Prefer WebGPU if available
+    // if ('gpu' in navigator) {
+    // //   env.backends.onnx.preferredBackend = 'webgpu';
+    // }
   }
 
   static getInstance(): EmbeddingService {
@@ -25,6 +28,16 @@ class EmbeddingService {
 
   async init(onModelStatus: (status: string) => void) {
     if (this.initialized) return;
+
+    if (this.isApiModel) {
+        // Check for API key
+        const settings = useStore.getState().settings;
+        if (!settings.openai.apiKey) {
+          throw new Error('OpenAI API key required for this model');
+        }
+        this.initialized = true;
+        return;
+    }
   
     const store = useStore.getState();
     try {
@@ -41,6 +54,8 @@ class EmbeddingService {
         'feature-extraction',
         this.modelId,
         {
+          device: this.device as any,
+          dtype: this.dtype as any,
           progress_callback: (progress: any) => {
             console.log("Loading model:", progress);
             onModelStatus('loading');
@@ -75,13 +90,49 @@ class EmbeddingService {
   }
 
   async setModel(modelId: string) {
-    if (this.modelId === modelId) return;
     this.modelId = modelId;
+    this.isApiModel = modelId.startsWith('text-embedding-3');
     this.initialized = false;
-    this.model = null;
+    
+    if (!this.isApiModel) {
+      this.model = null;
+    }
   }
 
   async getEmbeddings(text: string): Promise<number[]> {
+    if (this.isApiModel) {
+      return this.getOpenAIEmbeddings(text);
+    }
+    return this.getLocalEmbeddings(text);
+  }
+
+  private async getOpenAIEmbeddings(text: string): Promise<number[]> {
+    const settings = useStore.getState().settings;
+    if (!settings.openai.apiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${settings.openai.apiKey}`
+      },
+      body: JSON.stringify({
+        input: text,
+        model: this.modelId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.data[0].embedding;
+  }
+
+  private async getLocalEmbeddings(text: string): Promise<number[]> {
     console.log('Generating embeddings for text:', text);
     let onModelStatus = (status: string) => {
       console.log('Model status:', status);
