@@ -115,32 +115,64 @@ export function RAGManager() {
       }));
   
     } catch (error) {
-      console.error('Error processing file:', error);
-      setProgress(prev => ({
-        ...prev,
-        [docId]: { status: 'error', modelStatus: 'Error processing document', currentChunk: 0, totalChunks: 0 }
-      }));
+      console.error("Error uploading document:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to upload document",
+        variant: "destructive"
+      });
+      // Clean up failed upload from state
+      setSettings({
+        ...settings,
+        rag: {
+          ...settings.rag,
+          documents: settings.rag.documents.filter(d => d.id !== docId)
+        }
+      });
     } finally {
-      setIsUploading(false);
-      setUploadingDocs(prev => prev.filter(id => id !== docId));
       if (inputRef.current) {
         inputRef.current.value = '';
       }
+      setIsUploading(false);
+      setUploadingDocs(prev => prev.filter(id => id !== docId));
+      setProgress(prev => {
+        const { [docId]: _, ...rest } = prev;
+        return rest;
+      });
     }
   };
+
   const isApiModel = (modelId: string) => modelId.startsWith('text-embedding-3');
 
   const handleModelChange = async (modelId: string) => {
     try {
-      // Check for API key if needed
-      if (isApiModel(modelId) && !settings.openai.apiKey) {
-        toast({
-          title: "API Key Required",
-          description: "Please configure your OpenAI API key in settings first.",
-          variant: "destructive"
+      if (isApiModel(modelId)) {
+        if (!settings.openai.apiKey) {
+          toast({
+            title: "API Key Required",
+            description: "Please configure your OpenAI API key in settings first.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // For API models, just update the state without loading
+        await embeddingService.setModel(modelId);
+        useStore.setState({
+          settings: {
+            ...settings,
+            rag: {
+              ...settings.rag,
+              embeddingModel: modelId,
+              modelStatus: 'loaded' // Immediately set as loaded for API models
+            }
+          }
         });
         return;
       }
+      // await embeddingService.inspectCache();
+      // unload any prior model
+      await embeddingService.unload();
 
       // Update UI immediately
       useStore.setState({
@@ -155,14 +187,15 @@ export function RAGManager() {
       });
       
       await embeddingService.setModel(modelId);
-      await embeddingService.init(status => {
+      await embeddingService.init((status, progress) => {
         useStore.setState({
           settings: {
             ...settings,
             rag: {
               ...settings.rag,
               embeddingModel: modelId,
-              modelStatus: status as 'loading' | 'error' | 'unloaded' | 'loaded'
+              modelStatus: status as 'loading' | 'error' | 'unloaded' | 'loaded',
+              modelProgress: progress
             }
           }
         });
@@ -182,11 +215,16 @@ export function RAGManager() {
     }
   };
 
+  async function unloadModel() {
+    await embeddingService.unload();
+    await embeddingService.setModel('');
+  }
+
   useEffect(() => {
     if (settings.rag.enabled && !embeddingService.isInitialized()) {
       handleModelChange(settings.rag.embeddingModel || EMBEDDING_MODELS[0].id);
     } else if (!settings.rag.enabled) {
-      embeddingService.setModel('');
+      unloadModel();
       setSettings({
         ...settings,
         rag: {
@@ -350,6 +388,9 @@ export function RAGManager() {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
+          {settings.rag.modelProgress !== undefined && !isNaN(settings.rag.modelProgress) && 
+            ` ${settings.rag.modelProgress}%`
+          }
         </>
       ) :
       settings.rag.modelStatus === 'error' ? 'Error Loading Model' :
@@ -360,6 +401,7 @@ export function RAGManager() {
   <Select
     value={settings.rag.embeddingModel || EMBEDDING_MODELS[0].id}
     onValueChange={handleModelChange}
+    disabled={settings.rag.modelStatus === 'loading' || settings.rag.enabled === false}
   >
     <SelectTrigger>
       <SelectValue />
@@ -405,11 +447,11 @@ export function RAGManager() {
                 setUrlInput('https://' + urlInput);
               }
             }}
-            disabled={isUploading}
+            disabled={isUploading || settings.rag.modelStatus === 'loading' || settings.rag.enabled === false}
           />
             <Button 
               onClick={handleAddWebsite}
-              disabled={isUploading || !urlInput}
+              disabled={isUploading || !urlInput || settings.rag.modelStatus === 'loading' || settings.rag.enabled === false}
             >
               Add Website
             </Button>
@@ -419,8 +461,12 @@ export function RAGManager() {
             type="file"
             ref={inputRef}
             onChange={handleFileUpload}
-            accept=".pdf"
-            disabled={isUploading}
+            accept=".pdf,.txt,.md,.js,.jsx,.ts,.tsx,
+            .py,.java,.cpp,.c,.h,.hpp,.cs,.rb,.php,
+            .html,.htm,.css,.json,.xml,.yaml,.yml,.go,
+            .rs,.swift,.kt,.scala,.sh,.bash,.ps1,.psm1,
+            .psd1,.properties,.toml,.ini,.doc,.docx,.rtf,.zig"
+            disabled={isUploading || settings.rag.modelStatus === 'loading' || settings.rag.enabled === false}
             className="mt-4"
           />
         </div>
@@ -464,9 +510,8 @@ export function RAGManager() {
                   variant="destructive"
                   size="icon"
                   onClick={() => removeDocument(doc.id)}
-                  // disabled={progress[doc.id]?.status !== 'complete'}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-2 w-2" />
                 </Button>
               </div>
             ))}
@@ -483,9 +528,8 @@ export function RAGManager() {
                 variant="destructive"
                 size="icon"
                 onClick={() => removeWebsite(site.id)}
-                // disabled={progress[site.id]?.status !== 'complete'}
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-2 w-2" />
               </Button>
             </div>
           ))}

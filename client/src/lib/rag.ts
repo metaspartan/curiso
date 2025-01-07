@@ -4,6 +4,7 @@ import { embeddingService } from './embeddings';
 import { encode } from 'gpt-tokenizer';
 import { PDFProcessor } from './pdf';
 import { WebScraper } from './scraper';
+import { useStore } from '@/lib/store';
 
 interface ProgressCallbacks {
     onChunk?: (current: number, total: number) => void;
@@ -23,40 +24,165 @@ export class RAGService {
     }
   
     let content: string;
-    if (file.type === 'application/pdf') {
-      callbacks?.onModelStatus?.('Processing PDF...');
-      const pdfProcessor = new PDFProcessor();
-      content = await pdfProcessor.extractText(file);
-    } else {
-      content = await file.text();
-    }
+    callbacks?.onModelStatus?.('Processing file...');
   
-    callbacks?.onModelStatus?.('Chunking document...');
-    const chunks = this.chunkText(content);
-    const chunkIds: string[] = [];
-    
-    for (let i = 0; i < chunks.length; i++) {
-      callbacks?.onChunk?.(i + 1, chunks.length);
-      callbacks?.onModelStatus?.(`Embedding chunk ${i + 1}/${chunks.length}`);
+    // Define supported file types and their MIME types
+    const supportedTypes = {
+      // Documents
+      'application/pdf': true,
+      'text/plain': true,
+      'text/markdown': true,
+      'text/rtf': true,
+      'application/rtf': true,
+      'application/msword': true,
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': true,
+      
+      // Code files
+      'text/javascript': true,
+      'application/javascript': true,
+      'text/typescript': true,
+      'application/typescript': true,
+      'text/x-python': true,
+      'text/x-java': true,
+      'text/x-c': true,
+      'text/x-c++': true,
+      'text/x-csharp': true,
+      'text/x-go': true,
+      'text/x-ruby': true,
+      'text/x-rust': true,
+      'text/x-swift': true,
+      'text/x-kotlin': true,
+      'text/x-scala': true,
+      'text/x-php': true,
+      'text/x-zig': true,
+      
+      // Web files
+      'text/html': true,
+      'text/css': true,
+      'application/json': true,
+      'application/xml': true,
+      'text/xml': true,
+      'application/x-yaml': true,
+      'text/x-yaml': true,
+      
+      // Config files
+      'text/x-properties': true,
+      'text/x-toml': true,
+      'text/x-ini': true,
+      
+      // Shell scripts
+      'text/x-sh': true,
+      'application/x-sh': true,
+      'text/x-bash': true,
+      'text/x-powershell': true,
+    };
   
-      const chunkId = crypto.randomUUID();
-      const embedding = await embeddingService.getEmbeddings(chunks[i]);
+    // File extensions mapped to their common types
+    const extensionMap: { [key: string]: string } = {
+      // Documents
+      'txt': 'text/plain',
+      'md': 'text/markdown',
+      'pdf': 'application/pdf',
+      'rtf': 'application/rtf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       
-      const pageMatch = chunks[i].match(/^\[Page (\d+)\]/);
-      const pageNumber = pageMatch ? parseInt(pageMatch[1]) : 1;
+      // Code files
+      'js': 'text/javascript',
+      'jsx': 'text/javascript',
+      'ts': 'text/typescript',
+      'tsx': 'text/typescript',
+      'py': 'text/x-python',
+      'java': 'text/x-java',
+      'c': 'text/x-c',
+      'cpp': 'text/x-c++',
+      'cc': 'text/x-c++',
+      'h': 'text/x-c',
+      'hpp': 'text/x-c++',
+      'cs': 'text/x-csharp',
+      'go': 'text/x-go',
+      'rb': 'text/x-ruby',
+      'rs': 'text/x-rust',
+      'swift': 'text/x-swift',
+      'kt': 'text/x-kotlin',
+      'scala': 'text/x-scala',
+      'php': 'text/x-php',
+      'zig': 'text/x-zig',
       
-      await this.db.addDocument(embedding, chunks[i], {
-        ...metadata,
-        chunkId,
-        documentId: metadata.id,
-        type: 'document',
-        pageNumber,
-        source: metadata.filename 
-      });
-      chunkIds.push(chunkId);
-    }
+      // Web files
+      'html': 'text/html',
+      'htm': 'text/html',
+      'css': 'text/css',
+      'json': 'application/json',
+      'xml': 'text/xml',
+      'yaml': 'application/x-yaml',
+      'yml': 'application/x-yaml',
+      
+      // Config files
+      'properties': 'text/x-properties',
+      'toml': 'text/x-toml',
+      'ini': 'text/x-ini',
+      
+      // Shell scripts
+      'sh': 'text/x-sh',
+      'bash': 'text/x-bash',
+      'ps1': 'text/x-powershell',
+      'psm1': 'text/x-powershell',
+      'psd1': 'text/x-powershell',
+    };
+  
+    try {
+      // Check if the file type is directly supported
+      if (supportedTypes[file.type as keyof typeof supportedTypes]) {
+        if (file.type === 'application/pdf') {
+          const pdfProcessor = new PDFProcessor();
+          content = await pdfProcessor.extractText(file);
+        } else {
+          content = await file.text();
+        }
+      } else {
+        // Try to determine type by extension
+        const extension = file.name.split('.').pop()?.toLowerCase() || '';
+        const mappedType = extensionMap[extension];
+        
+        if (mappedType && supportedTypes[mappedType as keyof typeof supportedTypes]) {
+          content = await file.text();
+        } else {
+          throw new Error(`Unsupported file type: ${file.type || extension}`);
+        }
+      }
+  
+      callbacks?.onModelStatus?.('Chunking document...');
+      const chunks = this.chunkText(content);
+      const chunkIds: string[] = [];
+      
+      for (let i = 0; i < chunks.length; i++) {
+        callbacks?.onChunk?.(i + 1, chunks.length);
+        callbacks?.onModelStatus?.(`Embedding chunk ${i + 1}/${chunks.length}`);
     
-    return chunkIds;
+        const chunkId = crypto.randomUUID();
+        const embedding = await embeddingService.getEmbeddings(chunks[i]);
+        
+        const pageMatch = chunks[i].match(/^\[Page (\d+)\]/);
+        const pageNumber = pageMatch ? parseInt(pageMatch[1]) : 1;
+        
+        await this.db.addDocument(embedding, chunks[i], {
+          ...metadata,
+          chunkId,
+          documentId: metadata.id,
+          type: 'document',
+          pageNumber,
+          source: metadata.filename,
+          mimeType: file.type || extensionMap[file.name.split('.').pop()?.toLowerCase() || ''] || 'text/plain'
+        });
+        chunkIds.push(chunkId);
+      }
+      
+      return chunkIds;
+    } catch (error) {
+      console.error('Error processing document:', error);
+      throw error;
+    }
   }
 
   async removeDocument(documentId: string) {
@@ -107,45 +233,67 @@ export class RAGService {
     return { documentId, metadata: enhancedMetadata };
   }
 
-  async search(query: string, similarityThreshold = 0.3, topK = 3) {
-    console.log("RAG search:", { query, similarityThreshold, topK });
-    
+  async search(query: string, selectedDocs?: string[], selectedWebsites?: string[]) {  
+    console.log("RAG search:", { query, selectedDocs, selectedWebsites });
     const embedding = await embeddingService.getEmbeddings(query);
     console.log("Query embedding generated:", embedding.length);
-    
-    const results = await this.db.search(embedding, topK);
+  
+    // Get initial results
+    const results = await this.db.search(embedding, 10); // Get more initial results to filter
     console.log("Raw search results:", results);
   
-    // Deduplicate results based on content
+    // Filter by selected documents/websites and similarity threshold
+    const similarityThreshold = useStore.getState().settings.rag.similarityThreshold;
     const seenContent = new Set<string>();
-    const uniqueResults = results.filter(doc => {
-      if (seenContent.has(doc.content)) {
-        return false;
-      }
+    const filteredResults = results.filter(doc => {
+      // Skip if content already seen
+      if (seenContent.has(doc.content)) return false;
       seenContent.add(doc.content);
-      return doc.distance > similarityThreshold;
+  
+      // Check similarity threshold
+      if (doc.distance <= similarityThreshold) return false;
+  
+      // If no selections, include all results
+      if (!selectedDocs?.length && !selectedWebsites?.length) return true;
+  
+      const metadata = typeof doc.metadata === 'string' 
+        ? JSON.parse(doc.metadata) 
+        : doc.metadata;
+  
+      // Filter based on document type
+      if (metadata.type === 'document') {
+        return selectedDocs?.includes(metadata.documentId);
+      } else if (metadata.type === 'website') {
+        return selectedWebsites?.includes(metadata.documentId);
+      }
+      return false;
     });
   
-    // If we filtered out duplicates, get additional results
-    if (uniqueResults.length < topK) {
-      const additionalResults = await this.db.search(
-        embedding, 
-        topK + 5
-      );
-      
+    // Get additional results if needed (maintaining top 3 most relevant)
+    if (filteredResults.length < 3) {
+      const additionalResults = await this.db.search(embedding, 15);
       for (const doc of additionalResults) {
-        if (uniqueResults.length >= topK) break;
-        if (!seenContent.has(doc.content) && doc.distance > similarityThreshold) {
-          uniqueResults.push(doc);
+        if (filteredResults.length >= 3) break;
+        
+        const metadata = typeof doc.metadata === 'string' 
+          ? JSON.parse(doc.metadata) 
+          : doc.metadata;
+  
+        if (!seenContent.has(doc.content) && 
+            doc.distance > similarityThreshold &&
+            ((metadata.type === 'document' && selectedDocs?.includes(metadata.documentId)) ||
+             (metadata.type === 'website' && selectedWebsites?.includes(metadata.documentId)) ||
+             (!selectedDocs?.length && !selectedWebsites?.length))) {
+          filteredResults.push(doc);
           seenContent.add(doc.content);
         }
       }
     }
   
-    return uniqueResults.map(doc => ({
+    return filteredResults.map(doc => ({
       content: doc.content.trim(),
-      metadata: JSON.parse(doc.metadata),
-      relevance: doc.distance
+      metadata: typeof doc.metadata === 'string' ? JSON.parse(doc.metadata) : doc.metadata,
+      score: doc.distance
     }));
   }
 

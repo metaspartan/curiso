@@ -10,7 +10,7 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
-  
+
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -59,4 +59,16 @@
   border-radius: 5px;
   background: #1a1a1a;
   border-bottom: 1px solid #1a1a1a;
+}
+
+.react-markdown pre {
+  position: relative;
+}
+
+.react-markdown .group {
+  position: relative;
+}
+
+.react-markdown .group button {
+  pointer-events: auto !important;
 }

@@ -1,6 +1,6 @@
 {
   "name": "curiso.ai",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": "Carsen Klock",
   "type": "module",
   "license": "MIT",
@@ -48,6 +48,7 @@
     "@tauri-apps/api": "^2.2.0",
     "@tauri-apps/plugin-fs": "~2",
     "@tauri-apps/plugin-http": "^2.2.0",
+    "@tauri-apps/plugin-shell": "^2.2.0",
     "@types/sqlite3": "^3.1.11",
     "better-sqlite3": "^11.7.0",
     "class-variance-authority": "^0.7.0",
@@ -82,6 +83,7 @@
     "react-syntax-highlighter": "^15.6.1",
     "reactflow": "^11.11.4",
     "recharts": "^2.13.0",
+    "remark-gfm": "^4.0.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "use-debounce": "^10.0.4",

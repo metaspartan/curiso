@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef, useId, memo } from "react";
 import { Handle, Position, NodeProps, useReactFlow } from "reactflow";
 import {
   Card,
@@ -34,6 +34,10 @@ import { FileUpload } from "./FileUpload";
 import { encode } from "gpt-tokenizer";
 import { defaultLocalModels } from "@/lib/localmodels";
 import { modelService } from "@/lib/localmodels";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "./ui/context-menu";
+import { RAGSelector } from "./RAGSelector";
+import { CodeBlock } from "./CodeBlock";
+import remarkGfm from 'remark-gfm';
 
 export function ChatNode({ id, data: initialData }: NodeProps) {
   const [input, setInput] = useState("");
@@ -50,9 +54,15 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
   const [imageData, setImageData] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [selectedDocs, setSelectedDocs] = useState<string[]>(
+    initialData.selectedDocuments || settings.rag.documents.map(d => d.id)
+  );
+  const [selectedWebsites, setSelectedWebsites] = useState<string[]>(
+    initialData.selectedWebsites || settings.rag.websites?.map(w => w.id) || []
+  );
 
   const copyToClipboard = async (text: string, id: string) => {
-    // console.log('Attempting to copy text:', text);
+    console.log('Attempting to copy text:', text);
     console.log('Using ID:', id);
     try {
       await navigator.clipboard.writeText(text);
@@ -231,10 +241,9 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     let context = '';
     if (settings.rag?.enabled) {
       console.log("RAG enabled, searching for:", input);
-      // Get relevant context from RAG
       const ragService = new RAGService();
-      const relevantDocs = await ragService.search(input);
-
+      const relevantDocs = await ragService.search(input, selectedDocs, selectedWebsites);
+    
       console.log("Relevant docs, Search results:", relevantDocs);
       
       if (relevantDocs.length > 0) {
@@ -401,8 +410,12 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     const currentNode = currentBoard.nodes.find(n => n.id === id);
     if (!currentNode) return;
   
-    // Only update if the data has actually changed
-    if (currentNode.data.messages !== messages || currentNode.data.model !== model) {
+    if (
+      currentNode.data.messages !== messages || 
+      currentNode.data.model !== model ||
+      currentNode.data.selectedDocuments !== selectedDocs ||
+      currentNode.data.selectedWebsites !== selectedWebsites
+    ) {
       setSettings({
         ...settings,
         boards: settings.boards.map(board => 
@@ -411,7 +424,16 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
                 ...board,
                 nodes: board.nodes.map(node => 
                   node.id === id
-                    ? { ...node, data: { ...node.data, messages, model } }
+                    ? { 
+                        ...node, 
+                        data: { 
+                          ...node.data, 
+                          messages, 
+                          model,
+                          selectedDocuments: selectedDocs,
+                          selectedWebsites: selectedWebsites 
+                        } 
+                      }
                     : node
                 )
               }
@@ -419,7 +441,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
         )
       });
     }
-  }, [messages, model]);
+  }, [messages, model, selectedDocs, selectedWebsites]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -505,64 +527,49 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
                   className="max-w-sm rounded-md"
                 />
               )}
-              <ReactMarkdown
-                components={{
-                  h1: (props) => <h1 {...props} className="text-xl font-bold mt-6 mb-4" />,
-                  h2: (props) => <h2 {...props} className="text-lg font-semibold mt-5 mb-3" />,
-                  h3: (props) => <h3 {...props} className="text-md font-semibold mt-4 mb-2" />,
-                  p: (props) => <p {...props} className="mb-4 last:mb-0" />,
-                  ul: (props) => <ul {...props} className="mb-4 list-disc pl-6" />,
-                  ol: (props) => <ol {...props} className="mb-4 list-decimal pl-6" />,
-                  li: (props) => <li {...props} className="mb-1" />,
-                  code: ({ node, className, children, ...props }) => {
-                    const match = /language-(\w+)/.exec(className || "");
-                    const codeId = `code-${i}-${String(children).slice(0, 20)}`;
-
-                    return match ? (
-                      <div className="mb-4 relative group">
-                      <div className="absolute right-2 top-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
-                        {/* <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6 hover:bg-muted/50"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            copyToClipboard(String(children).replace(/\n$/, ""), codeId);
-                          }}
-                        >
-                          {copiedStates[codeId] ? (
-                            <Check className="h-3 w-3 text-green-500" />
-                          ) : (
-                            <Copy className="h-3 w-3" />
-                          )}
-                        </Button> */}
-                      </div>
-                        <div className="rounded-md">
-                          <SyntaxHighlighter
-                            language={match[1]}
-                            style={oneDark}
-                            customStyle={{
-                              margin: 0,
-                              minWidth: '100%',
-                              width: '100%',
-                              borderRadius: '0.375rem',
-                            }}
-                          >
-                            {String(children).replace(/\n$/, "")}
-                          </SyntaxHighlighter>
-                        </div>
-                      </div>
-                    ) : (
-                      <code className={cn("bg-muted px-1.5 py-0.5 rounded-md text-sm", className)} {...props}>
-                        {children}
-                      </code>
-                    );
-                  }
-                }}
-              >
-                {msg.content}
-              </ReactMarkdown>
+<ReactMarkdown
+  components={{
+    code: CodeBlock as any,
+    pre: ({ children }) => <pre className="p-0 m-0" onClick={e => e.stopPropagation()}>{children}</pre>,
+    h1: ({ children }) => <h1 className="text-2xl font-bold mb-2">{children}</h1>,
+    h2: ({ children }) => <h2 className="text-xl font-bold mb-2">{children}</h2>,
+    h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
+    h4: ({ children }) => <h4 className="text-base font-bold mb-2">{children}</h4>,
+    p: ({ children }) => <p className="mb-4">{children}</p>,
+    ul: ({ children }) => <ul className="list-disc list-inside mb-4">{children}</ul>,
+    ol: ({ children }) => <ol className="list-decimal list-inside mb-4">{children}</ol>,
+    li: ({ children }) => <li className="mb-1">{children}</li>,
+    a: ({ href, children }) => (
+      <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    ),
+    blockquote: ({ children }) => (
+      <blockquote className="border-l-4 border-primary pl-4 italic mb-4">
+        {children}
+      </blockquote>
+    ),
+    img: ({ src, alt }) => (
+      <img src={src} alt={alt} className="max-w-full h-auto rounded-lg mb-4" />
+    ),
+    table: ({ children }) => (
+      <div className="overflow-x-auto mb-4">
+        <table className="min-w-full divide-y divide-border">
+          {children}
+        </table>
+      </div>
+    ),
+    th: ({ children }) => (
+      <th className="px-4 py-2 bg-muted font-medium">{children}</th>
+    ),
+    td: ({ children }) => (
+      <td className="px-4 py-2 border-t">{children}</td>
+    ),
+  }}
+  remarkPlugins={[remarkGfm]}
+>
+  {msg.content}
+</ReactMarkdown>
               {msg.role === "assistant" && msg.metrics && (
                 <div className="text-xs text-gray-500 mt-1">
                   {msg.metrics.totalTokens && `${msg.metrics.totalTokens} tokens`}
@@ -574,7 +581,16 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
           ))}
         </div>
       </CardContent>
-
+      {settings.rag?.enabled && (
+        <div className="px-4 pb-2">
+          <RAGSelector
+            selectedDocs={selectedDocs}
+            selectedWebsites={selectedWebsites}
+            onDocsChange={setSelectedDocs}
+            onWebsitesChange={setSelectedWebsites}
+          />
+        </div>
+      )}
       <CardFooter className="p-2 pt-0 gap-2 flex-col">
         <div className="flex w-full gap-2">
 

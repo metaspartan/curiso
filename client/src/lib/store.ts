@@ -146,8 +146,25 @@ export const useStore = create<StoreState>()(
       clearAllData: async () => {
         const storage = await getSecureStorage();
         storage.clear();
+        
+        // Clear VectorDB IndexedDB
         const db = new VectorDB();
         await db.clearAll();
+
+        // Clear embedding models from Browser Cache Storage
+        const cacheKeys = await caches.keys();
+        for (const key of cacheKeys) {
+          // if (key.includes('transformers')) {
+            await caches.delete(key);
+            console.log('Cleared cache:', key);
+          // }
+        }
+
+        // Garbage collect
+        if (globalThis.gc) {
+          globalThis.gc();
+        }
+
         set({ settings: defaultSettings });
       }
     }),

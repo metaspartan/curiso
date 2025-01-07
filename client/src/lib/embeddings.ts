@@ -26,7 +26,7 @@ class EmbeddingService {
     return EmbeddingService.instance;
   }
 
-  async init(onModelStatus: (status: string) => void) {
+  async init(onModelStatus: (status: string, progress?: number) => void) {
     if (this.initialized) return;
 
     if (this.isApiModel) {
@@ -48,7 +48,7 @@ class EmbeddingService {
         }
       });
   
-      onModelStatus('loading');
+      onModelStatus('loading', 0);
   
       this.model = await pipeline(
         'feature-extraction',
@@ -58,7 +58,10 @@ class EmbeddingService {
           dtype: this.dtype as any,
           progress_callback: (progress: any) => {
             console.log("Loading model:", progress);
-            onModelStatus('loading');
+            console.log("Loading model progress.progress:", Math.round(progress.progress));
+            // if NaN set to 100
+            // const progressPercentage = isNaN(progress.progress) ? 100 : Math.round(progress.progress);
+            onModelStatus('loading', Math.round(progress.progress));
           }
         }
       );
@@ -99,10 +102,53 @@ class EmbeddingService {
     }
   }
 
+  async unload() {
+    if (this.model) {
+      // @ts-ignore - transformers.js doesn't expose types for dispose
+      console.log('Unloading Embedding Model:', this.modelId);
+      if (this.model.dispose) {
+        await this.model.dispose();
+
+        // Clear from Cache Storage
+        const cacheKeys = await caches.keys();
+        for (const key of cacheKeys) {
+          if (key.includes('transformers') || key.includes(this.modelId)) {
+            await caches.delete(key);
+            console.log('Cleared cache:', key);
+          }
+        }
+
+        if (globalThis.gc) {
+          globalThis.gc();
+        }
+        console.log('Embedding Model unloaded');
+      }
+      this.model = null;
+    }
+    this.initialized = false;
+  }
+
+  async inspectCache() {
+    try {
+      const cacheKeys = await caches.keys();
+      console.log('Available caches:', cacheKeys);
+      
+      for (const key of cacheKeys) {
+        const cache = await caches.open(key);
+        const requests = await cache.keys();
+        console.log(`Cache "${key}" contents:`, requests.map(req => req.url));
+      }
+    } catch (error) {
+      console.error('Error inspecting cache:', error);
+    }
+  }
+
   async getEmbeddings(text: string): Promise<number[]> {
     if (this.isApiModel) {
+      console.log('Using OpenAI API for embeddings');
       return this.getOpenAIEmbeddings(text);
     }
+    console.log('Using Local Embedding Model for embeddings');
     return this.getLocalEmbeddings(text);
   }
 

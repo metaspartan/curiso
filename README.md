@@ -7,6 +7,7 @@ Curiso AI is an infinite canvas for your thoughts—a platform that seamlessly c
 
 ## Features
 
+- **Multi OS**: Windows, macOS, and Linux app
 - **Infinite Canvas**: Create and organize your thoughts visually on an unlimited workspace
 - **Multiple AI Provider Integration**:
   - OpenAI
@@ -21,10 +22,13 @@ Curiso AI is an infinite canvas for your thoughts—a platform that seamlessly c
   - Exo
   - Jan.ai
   - LM Studio
+  - vLLM
 
 - **Custom Model Support**: Add and configure custom AI models
 - **Model Metrics**: View metrics for models like tok/sec and total tokens
-- **RAG Support (Retrieval Augmented Generation)**: Add and configure RAG PDF documents and websites locally
+- **RAG Support (Retrieval Augmented Generation)**: Add and configure RAG documents and websites locally
+- **Local Transformers.js Embedding Models or OpenAI**: Add and configure local embedding models or OpenAI embedding models
+- **Local VectorDB IndexedDB**: Local VectorDB IndexedDB for RAG
 - **Inference Parameters**: Customize the inference parameters for your conversations
 - **Multiple Boards**: Create and manage multiple workspaces
 - **Vision Model Support**: Add images to your chats for vision models
@@ -34,7 +38,7 @@ Curiso AI is an infinite canvas for your thoughts—a platform that seamlessly c
   - Pan and zoom controls
   - Double-click zoom functionality
 - **Node-Based Conversations**: Connect ideas and conversations through an intuitive node chat system
-- **Secure**: Local encrypted storage of API keys and sensitive chat data
+- **Secure**: Local encrypted storage of API keys and sensitive data
 
 ![screenshot](screenshot.png)
 
