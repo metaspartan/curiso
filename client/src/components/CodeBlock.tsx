@@ -3,21 +3,26 @@ import { Button } from './ui/button';
 import { Copy, Check } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import type { CodeProps } from 'react-markdown/lib/ast-to-react';
+
+interface CodeBlockProps {
+  inline?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}
 
 export const CodeBlock = memo(({ 
   inline, 
   className, 
   children,
   ...props 
-}: CodeProps) => {
+}: CodeBlockProps) => {
   const [isCopied, setIsCopied] = useState(false);
   const match = /language-(\w+)/.exec(className || '');
 
-  const handleCopy = useCallback((e: React.MouseEvent) => {
+  const handleCopy = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+    console.log('Copying code block');
     if (!children) return;
     
     const code = String(children).replace(/\n$/, '');
@@ -27,17 +32,19 @@ export const CodeBlock = memo(({
     }).catch(err => {
       console.error('Failed to copy:', err);
     });
-  }, [children]);
+  };
 
   if (!inline && match) {
     return (
-      <div className="relative group" onMouseDown={e => e.stopPropagation()}>
+      <div className="relative group">
         {/* <Button
           type="button"
           variant="ghost"
           size="icon"
           className="absolute right-2 top-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/50"
-          onMouseDown={handleCopy}
+          onClick={(e) => {
+            handleCopy(e);
+          }}
         >
           {isCopied ? (
             <Check className="h-3 w-3 text-green-500" />

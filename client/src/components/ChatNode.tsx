@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, Trash2, Loader2, Maximize2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
   Select,
   SelectContent,
@@ -23,18 +22,13 @@ import { AIModel, APIResponseMetrics, CustomModel, Message, availableModels } fr
 import { cn, sanitizeChatMessages } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { Copy, Check } from "lucide-react";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { NodeResizer } from 'reactflow';
 import Anthropic from '@anthropic-ai/sdk';
 import { DEFAULT_AI_SETTINGS, AISettings, PRESET_ENDPOINTS } from '@/lib/constants';
 import { ImageUpload } from "./ImageUpload";
 import logo from "@/assets/logo.svg";
 import { RAGService } from "@/lib/rag";
-import { FileUpload } from "./FileUpload";
-import { encode } from "gpt-tokenizer";
-import { defaultLocalModels } from "@/lib/localmodels";
-import { modelService } from "@/lib/localmodels";
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "./ui/context-menu";
+// import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "./ui/context-menu";
 import { RAGSelector } from "./RAGSelector";
 import { CodeBlock } from "./CodeBlock";
 import remarkGfm from 'remark-gfm';
@@ -308,6 +302,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
   
         const assistantMessage: Message = {
           role: "assistant",
+          // @ts-ignore anthropic returns content as an array
           content: response.content[0].text,
           metrics: {
             tokensPerSecond: metrics.completion_tokens ? metrics.completion_tokens / totalTime : undefined,
@@ -320,12 +315,22 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
 
         
       } else {
+
         const messageContent = imageData
         ? [
             { type: "text", text: input },
             { type: "image_url", image_url: { url: imageData } }
           ]
         : input;
+
+        // Check if using O1 models
+        const isO1Model = model.includes('o1-mini') || model.includes('o1') || model.includes('o1-preview');
+        const messagesToSend = sanitizeChatMessages([
+          ...((!isO1Model && enhancedSystemPrompt) ? [{ role: 'system', content: enhancedSystemPrompt }] : []),
+          ...allMessages.slice(0, -1),
+          { role: "user", content: messageContent }
+        ]).filter(m => m.content);
+
         response = await fetch(`${baseUrl}/chat/completions`, {
           method: "POST",
           headers: {
@@ -334,11 +339,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
           },
           body: JSON.stringify({
             model,
-            messages: sanitizeChatMessages([
-              { role: 'system', content: enhancedSystemPrompt },
-              ...allMessages.slice(0, -1),
-              { role: "user", content: messageContent }
-            ]).filter(m => m.content),
+            messages: messagesToSend,
             // we shouldnt pass any of these unless they are changed from the defaults
             ...filterAISettings(settings),
           }),
@@ -502,8 +503,8 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
             key={i}
             className={`${
               msg.role === "user"
-                ? "bg-primary text-primary-foreground ml-4"
-                : "bg-muted text-muted-foreground mr-4"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground"
             } p-3 rounded-lg relative group`}
           >
             <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -535,10 +536,10 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     h2: ({ children }) => <h2 className="text-xl font-bold mb-2">{children}</h2>,
     h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
     h4: ({ children }) => <h4 className="text-base font-bold mb-2">{children}</h4>,
-    p: ({ children }) => <p className="mb-4">{children}</p>,
+    p: ({ children }) => <p className="mt-1 mb-2">{children}</p>,
     ul: ({ children }) => <ul className="list-disc list-inside mb-4">{children}</ul>,
     ol: ({ children }) => <ol className="list-decimal list-inside mb-4">{children}</ol>,
-    li: ({ children }) => <li className="mb-1">{children}</li>,
+    li: ({ children }) => <li className="mb-2">{children}</li>,
     a: ({ href, children }) => (
       <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
         {children}

@@ -3,7 +3,7 @@ import { Node as ReactFlowNode } from 'reactflow';
 import googleLogo from '@/assets/google-logo.svg'
 
 export interface Message {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   image_url?: string;
   metrics?: {
