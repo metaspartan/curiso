@@ -36,7 +36,8 @@ export const DEFAULT_AI_SETTINGS = {
     top_p: 0,
     max_tokens: 8192,
     frequency_penalty: 0,
-    presence_penalty: 0
+    presence_penalty: 0,
+    streaming: false // Added streaming property
   };
   
   export type AISettings = typeof DEFAULT_AI_SETTINGS;

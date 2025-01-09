@@ -162,7 +162,6 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     if (settings.temperature !== DEFAULT_AI_SETTINGS.temperature) {
       filteredSettings.temperature = settings.temperature;
     }
-  
     return filteredSettings;
   }
 
@@ -278,41 +277,134 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
           dangerouslyAllowBrowser: true
         });
       
-        const response = await anthropic.messages.create({
-          model: model,
-          system: enhancedSystemPrompt,
-          messages: 
-          sanitizeChatMessages(allMessages.map(msg => ({
-            role: msg.role === "user" ? "user" : "assistant",
-            content: msg.content
-          }))),
-          max_tokens: 8192,
-          ...filterAnthropicAISettings(settings),
-        });
-
-        metrics = {
-          completion_tokens: response.usage?.output_tokens,
-          prompt_tokens: response.usage?.input_tokens,
-          total_tokens: response.usage?.input_tokens + response.usage?.output_tokens,
-          model: response.model
-        };
-  
-        const endTime = performance.now();
-        const totalTime = (endTime - startTime) / 1000;
-  
-        const assistantMessage: Message = {
-          role: "assistant",
-          // @ts-ignore anthropic returns content as an array
-          content: response.content[0].text,
-          metrics: {
-            tokensPerSecond: metrics.completion_tokens ? metrics.completion_tokens / totalTime : undefined,
-            totalTokens: metrics.completion_tokens,
-            totalTime
+        if (settings.streaming) {
+          try {
+            const startTime = performance.now();
+            
+            // Create empty assistant message first
+            const assistantMessage: Message = {
+              role: "assistant",
+              content: "",
+            };
+            
+            // Add the empty assistant message
+            setMessages(prev => [...prev, assistantMessage]);
+        
+            let streamedContent = "";
+            let loadingDots = "";
+            let loadingInterval: NodeJS.Timeout;
+        
+            // Start the loading animation
+            loadingInterval = setInterval(() => {
+              loadingDots = loadingDots === "⬤" ? "⬤" : "⬤";
+              setMessages(prev => {
+                const updated = [...prev];
+                const lastIndex = updated.length - 1;
+                updated[lastIndex] = {
+                  ...updated[lastIndex],
+                  content: streamedContent + loadingDots
+                };
+                return updated;
+              });
+            }, 500);
+        
+            // Use streamMessages.create() for streaming
+            const stream = await anthropic.messages.stream({
+              model: model,
+              system: enhancedSystemPrompt,
+              messages: sanitizeChatMessages(allMessages.map(msg => ({
+                role: msg.role === "user" ? "user" : "assistant",
+                content: msg.content
+              }))),
+              max_tokens: 8192,
+              ...filterAnthropicAISettings(settings),
+            });
+        
+            // Handle the stream
+            for await (const chunk of stream) {
+              if (chunk.type === 'content_block_delta') {
+                const content = chunk.delta.text;
+                if (content) {
+                  streamedContent += content;
+                  setMessages(prev => {
+                    const updated = [...prev];
+                    const lastIndex = updated.length - 1;
+                    updated[lastIndex] = {
+                      ...updated[lastIndex],
+                      content: streamedContent + loadingDots
+                    };
+                    return updated;
+                  });
+                }
+              }
+            }
+        
+            // Clean up loading animation
+            clearInterval(loadingInterval);
+        
+            // Calculate metrics after stream is complete
+            const endTime = performance.now();
+            const totalTime = (endTime - startTime) / 1000;
+            
+            // Update final message with metrics
+            setMessages(prev => {
+              const updated = [...prev];
+              const lastIndex = updated.length - 1;
+              updated[lastIndex] = {
+                ...updated[lastIndex],
+                content: streamedContent,
+                metrics: {
+                  totalTime,
+                  // Estimate tokens using characters/4 as a rough approximation
+                  totalTokens: Math.round(streamedContent.length / 4),
+                  tokensPerSecond: Math.round((streamedContent.length / 4) / totalTime)
+                }
+              };
+              return updated;
+            });
+        
+          } catch (error) {
+            // Remove the empty assistant message on error
+            setMessages(prev => prev.slice(0, -1));
+            console.error("Anthropic streaming error:", error);
+            // throw error;
           }
-        };
+        } else {
+          const response = await anthropic.messages.create({
+            model: model,
+            system: enhancedSystemPrompt,
+            messages: 
+            sanitizeChatMessages(allMessages.map(msg => ({
+              role: msg.role === "user" ? "user" : "assistant",
+              content: msg.content
+            }))),
+            max_tokens: 8192,
+            ...filterAnthropicAISettings(settings),
+          });
 
-        setMessages((prev) => [...prev, assistantMessage]);
-
+          metrics = {
+            completion_tokens: response.usage?.output_tokens,
+            prompt_tokens: response.usage?.input_tokens,
+            total_tokens: response.usage?.input_tokens + response.usage?.output_tokens,
+            model: response.model
+          };
+    
+          const endTime = performance.now();
+          const totalTime = (endTime - startTime) / 1000;
+    
+          const assistantMessage: Message = {
+            role: "assistant",
+            // @ts-ignore anthropic returns content as an array
+            content: response.content[0].text,
+            metrics: {
+              tokensPerSecond: metrics.completion_tokens ? metrics.completion_tokens / totalTime : undefined,
+              totalTokens: metrics.completion_tokens,
+              totalTime
+            }
+          };
+  
+          setMessages((prev) => [...prev, assistantMessage]);
+        }
         
       } else {
 
@@ -331,61 +423,180 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
           { role: "user", content: messageContent }
         ]).filter(m => m.content);
 
-        response = await fetch(`${baseUrl}/chat/completions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model,
-            messages: messagesToSend,
-            // we shouldnt pass any of these unless they are changed from the defaults
-            ...filterAISettings(settings),
-          }),
-        });
-  
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(`API error: ${response.status} - ${errorData}`);
-        }
-  
-        result = await response.json();
-  
-        if (!result.choices?.[0]?.message?.content) {
-          throw new Error("Invalid response format from API");
-        }
-  
-        // const assistantMessage: Message = {
-        //   role: "assistant",
-        //   content: result.choices[0].message.content,
-        // };
-
-        metrics = {
-          completion_tokens: result.usage?.completion_tokens,
-          prompt_tokens: result.usage?.prompt_tokens,
-          total_tokens: result.usage?.total_tokens,
-          model: result.model
-        };
-  
-        const endTime = performance.now();
-        const totalTime = (endTime - startTime) / 1000;
-  
-        const assistantMessage: Message = {
-          role: "assistant",
-          content: result.choices[0].message.content,
-          metrics: {
-            tokensPerSecond: metrics.completion_tokens ? metrics.completion_tokens / totalTime : undefined,
-            totalTokens: metrics.completion_tokens,
-            totalTime
+        if (settings.streaming) {
+          try {
+            const startTime = performance.now();
+        
+            // Create empty assistant message first
+            const assistantMessage: Message = {
+              role: "assistant",
+              content: "",
+            };
+            
+            // Add the empty assistant message
+            setMessages(prev => [...prev, assistantMessage]);
+        
+            let streamedContent = "";
+            let loadingDots = "";
+            let loadingInterval: NodeJS.Timeout;
+        
+            // Start the loading animation
+            loadingInterval = setInterval(() => {
+              loadingDots = loadingDots === "⬤" ? "⬤" : "⬤";
+              setMessages(prev => {
+                const updated = [...prev];
+                const lastIndex = updated.length - 1;
+                updated[lastIndex] = {
+                  ...updated[lastIndex],
+                  content: streamedContent + loadingDots
+                };
+                return updated;
+              });
+            }, 500);
+        
+            response = await fetch(`${baseUrl}/chat/completions`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model,
+                messages: messagesToSend,
+                stream: true,
+                ...filterAISettings(settings),
+              }),
+            });
+        
+            if (!response.ok) {
+              clearInterval(loadingInterval);
+              const errorData = await response.text();
+              console.error(`API error: ${response.status} - ${errorData}`);
+            }
+        
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+        
+            while (true) {
+              const { done, value } = await reader?.read() || {};
+              if (done) break;
+              
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split("\n");
+              
+              for (const line of lines) {
+                if (line.trim() === "") continue;
+                const message = line.replace(/^data: /, "");
+                if (message === "[DONE]") break;
+                
+                try {
+                  const parsed = JSON.parse(message);
+                  const content = parsed.choices[0].delta.content;
+                  if (content) {
+                    streamedContent += content;
+                    setMessages(prev => {
+                      const updated = [...prev];
+                      const lastIndex = updated.length - 1;
+                      updated[lastIndex] = {
+                        ...updated[lastIndex],
+                        content: streamedContent + loadingDots
+                      };
+                      return updated;
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error parsing message:", error);
+                }
+              }
+            }
+        
+            // Clean up loading animation
+            clearInterval(loadingInterval);
+        
+            // Calculate metrics after stream is complete
+            const endTime = performance.now();
+            const totalTime = (endTime - startTime) / 1000;
+            
+            // Update final message with metrics
+            setMessages(prev => {
+              const updated = [...prev];
+              const lastIndex = updated.length - 1;
+              updated[lastIndex] = {
+                ...updated[lastIndex],
+                content: streamedContent,
+                metrics: {
+                  totalTime,
+                  // Estimate tokens using characters/4 as a rough approximation
+                  totalTokens: Math.round(streamedContent.length / 4),
+                  tokensPerSecond: Math.round((streamedContent.length / 4) / totalTime)
+                }
+              };
+              return updated;
+            });
+        
+          } catch (error) {
+            // Remove the empty assistant message on error
+            setMessages(prev => prev.slice(0, -1));
+            console.error("OpenAI streaming error:", error);
+            toast({
+              title: "Error",
+              description: error instanceof Error ? error.message : "Failed to send message",
+              variant: "destructive",
+            });
+          } finally {
+            setIsLoading(false);
           }
-        };
-  
-        setMessages((prev) => [...prev, assistantMessage]);
-        setInput("");
-        setImageData(null);
-        setPreviewImage(null);
-        setUploadedFileName(null);
+        } else {
+          response = await fetch(`${baseUrl}/chat/completions`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model,              
+              messages: messagesToSend,
+              ...filterAISettings(settings),
+            }),
+          });
+      
+          if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`API error: ${response.status} - ${errorData}`);
+          }
+      
+          result = await response.json();
+      
+          if (!result.choices?.[0]?.message?.content) {
+            throw new Error("Invalid response format from API");
+          }
+      
+          metrics = {
+            completion_tokens: result.usage?.completion_tokens,
+            prompt_tokens: result.usage?.prompt_tokens,
+            total_tokens: result.usage?.total_tokens,
+            model: result.model
+          };
+      
+          const endTime = performance.now();
+          const totalTime = (endTime - startTime) / 1000;
+      
+          const assistantMessage: Message = {
+            role: "assistant",
+            content: result.choices[0].message.content,
+            metrics: {
+              tokensPerSecond: metrics.completion_tokens ? metrics.completion_tokens / totalTime : undefined,
+              totalTokens: metrics.completion_tokens,
+              totalTime
+            }
+          };
+      
+          setMessages((prev) => [...prev, assistantMessage]);
+          setInput("");
+          setImageData(null);
+          setPreviewImage(null);
+          setUploadedFileName(null);
+        }
       }
     } catch (error) {
       console.error("Error sending message:", error);

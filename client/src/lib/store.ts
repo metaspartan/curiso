@@ -71,7 +71,8 @@ const defaultSettings: GlobalSettings = {
   panOnScroll: false,
   zoomOnScroll: true,
   fitViewOnInit: true,
-  lastSelectedModel: 'chatgpt-4o-latest'
+  lastSelectedModel: 'chatgpt-4o-latest',
+  streaming: false // Added streaming property
 };
 
 // Migration functions for each version

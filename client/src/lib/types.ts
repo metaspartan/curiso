@@ -96,6 +96,7 @@ export interface GlobalSettings {
   temperature: number;
   top_p: number;
   max_tokens: number;
+  streaming: boolean;
   frequency_penalty: number;
   presence_penalty: number;
   systemPrompt: string;
