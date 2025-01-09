@@ -162,7 +162,6 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     if (settings.temperature !== DEFAULT_AI_SETTINGS.temperature) {
       filteredSettings.temperature = settings.temperature;
     }
-  
     return filteredSettings;
   }
 
@@ -279,54 +278,96 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
         });
       
         if (settings.streaming) {
-          const response = await anthropic.messages.create({
-            model: model,
-            system: enhancedSystemPrompt,
-            messages: 
-            sanitizeChatMessages(allMessages.map(msg => ({
-              role: msg.role === "user" ? "user" : "assistant",
-              content: msg.content
-            }))),
-            max_tokens: 8192,
-            stream: true,
-            ...filterAnthropicAISettings(settings),
-          });
-      
-          const reader = response.body?.getReader();
-          const decoder = new TextDecoder();
-          let assistantMessage: Message = {
-            role: "assistant",
-            content: "",
-          };
-      
-          while (true) {
-            const { done, value } = await reader?.read() || {};
-            if (done) break;
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split("\n");
-            for (const line of lines) {
-              if (line.trim() === "") continue;
-              const message = line.replace(/^data: /, "");
-              if (message === "[DONE]") {
-                setMessages((prev) => [...prev, assistantMessage]);
-                setIsLoading(false);
-                return;
-              }
-              try {
-                const parsed = JSON.parse(message);
-                const content = parsed.choices[0].delta.content;
+          try {
+            const startTime = performance.now();
+            
+            // Create empty assistant message first
+            const assistantMessage: Message = {
+              role: "assistant",
+              content: "",
+            };
+            
+            // Add the empty assistant message
+            setMessages(prev => [...prev, assistantMessage]);
+        
+            let streamedContent = "";
+            let loadingDots = "";
+            let loadingInterval: NodeJS.Timeout;
+        
+            // Start the loading animation
+            loadingInterval = setInterval(() => {
+              loadingDots = loadingDots === "⬤" ? "⬤" : "⬤";
+              setMessages(prev => {
+                const updated = [...prev];
+                const lastIndex = updated.length - 1;
+                updated[lastIndex] = {
+                  ...updated[lastIndex],
+                  content: streamedContent + loadingDots
+                };
+                return updated;
+              });
+            }, 500);
+        
+            // Use streamMessages.create() for streaming
+            const stream = await anthropic.messages.stream({
+              model: model,
+              system: enhancedSystemPrompt,
+              messages: sanitizeChatMessages(allMessages.map(msg => ({
+                role: msg.role === "user" ? "user" : "assistant",
+                content: msg.content
+              }))),
+              max_tokens: 8192,
+              ...filterAnthropicAISettings(settings),
+            });
+        
+            // Handle the stream
+            for await (const chunk of stream) {
+              if (chunk.type === 'content_block_delta') {
+                const content = chunk.delta.text;
                 if (content) {
-                  assistantMessage.content += content;
-                  setMessages((prev) => {
-                    const updatedMessages = [...prev];
-                    updatedMessages[updatedMessages.length - 1] = assistantMessage;
-                    return updatedMessages;
+                  streamedContent += content;
+                  setMessages(prev => {
+                    const updated = [...prev];
+                    const lastIndex = updated.length - 1;
+                    updated[lastIndex] = {
+                      ...updated[lastIndex],
+                      content: streamedContent + loadingDots
+                    };
+                    return updated;
                   });
                 }
-              } catch (error) {
-                console.error("Error parsing message:", error);
               }
             }
+        
+            // Clean up loading animation
+            clearInterval(loadingInterval);
+        
+            // Calculate metrics after stream is complete
+            const endTime = performance.now();
+            const totalTime = (endTime - startTime) / 1000;
+            
+            // Update final message with metrics
+            setMessages(prev => {
+              const updated = [...prev];
+              const lastIndex = updated.length - 1;
+              updated[lastIndex] = {
+                ...updated[lastIndex],
+                content: streamedContent,
+                metrics: {
+                  totalTime,
+                  // Estimate tokens using characters/4 as a rough approximation
+                  totalTokens: Math.round(streamedContent.length / 4),
+                  tokensPerSecond: Math.round((streamedContent.length / 4) / totalTime)
+                }
+              };
+              return updated;
+            });
+        
+          } catch (error) {
+            // Remove the empty assistant message on error
+            setMessages(prev => prev.slice(0, -1));
+            console.error("Anthropic streaming error:", error);
+            // throw error;
           }
         } else {
           const response = await anthropic.messages.create({
@@ -383,60 +424,127 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
         ]).filter(m => m.content);
 
         if (settings.streaming) {
-          response = await fetch(`${baseUrl}/chat/completions`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-              model,
-              messages: messagesToSend,
-              stream: true,
-              ...filterAISettings(settings),
-            }),
-          });
-      
-          if (!response.ok) {
-            const errorData = await response.text();
-            throw new Error(`API error: ${response.status} - ${errorData}`);
-          }
-      
-          const reader = response.body?.getReader();
-          const decoder = new TextDecoder();
-          let assistantMessage: Message = {
-            role: "assistant",
-            content: "",
-          };
-      
-          while (true) {
-            const { done, value } = await reader?.read() || {};
-            if (done) break;
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split("\n");
-            for (const line of lines) {
-              if (line.trim() === "") continue;
-              const message = line.replace(/^data: /, "");
-              if (message === "[DONE]") {
-                setMessages((prev) => [...prev, assistantMessage]);
-                setIsLoading(false);
-                return;
-              }
-              try {
-                const parsed = JSON.parse(message);
-                const content = parsed.choices[0].delta.content;
-                if (content) {
-                  assistantMessage.content += content;
-                  setMessages((prev) => {
-                    const updatedMessages = [...prev];
-                    updatedMessages[updatedMessages.length - 1] = assistantMessage;
-                    return updatedMessages;
-                  });
+          try {
+            const startTime = performance.now();
+        
+            // Create empty assistant message first
+            const assistantMessage: Message = {
+              role: "assistant",
+              content: "",
+            };
+            
+            // Add the empty assistant message
+            setMessages(prev => [...prev, assistantMessage]);
+        
+            let streamedContent = "";
+            let loadingDots = "";
+            let loadingInterval: NodeJS.Timeout;
+        
+            // Start the loading animation
+            loadingInterval = setInterval(() => {
+              loadingDots = loadingDots === "⬤" ? "⬤" : "⬤";
+              setMessages(prev => {
+                const updated = [...prev];
+                const lastIndex = updated.length - 1;
+                updated[lastIndex] = {
+                  ...updated[lastIndex],
+                  content: streamedContent + loadingDots
+                };
+                return updated;
+              });
+            }, 500);
+        
+            response = await fetch(`${baseUrl}/chat/completions`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model,
+                messages: messagesToSend,
+                stream: true,
+                ...filterAISettings(settings),
+              }),
+            });
+        
+            if (!response.ok) {
+              clearInterval(loadingInterval);
+              const errorData = await response.text();
+              console.error(`API error: ${response.status} - ${errorData}`);
+            }
+        
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+        
+            while (true) {
+              const { done, value } = await reader?.read() || {};
+              if (done) break;
+              
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split("\n");
+              
+              for (const line of lines) {
+                if (line.trim() === "") continue;
+                const message = line.replace(/^data: /, "");
+                if (message === "[DONE]") break;
+                
+                try {
+                  const parsed = JSON.parse(message);
+                  const content = parsed.choices[0].delta.content;
+                  if (content) {
+                    streamedContent += content;
+                    setMessages(prev => {
+                      const updated = [...prev];
+                      const lastIndex = updated.length - 1;
+                      updated[lastIndex] = {
+                        ...updated[lastIndex],
+                        content: streamedContent + loadingDots
+                      };
+                      return updated;
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error parsing message:", error);
                 }
-              } catch (error) {
-                console.error("Error parsing message:", error);
               }
             }
+        
+            // Clean up loading animation
+            clearInterval(loadingInterval);
+        
+            // Calculate metrics after stream is complete
+            const endTime = performance.now();
+            const totalTime = (endTime - startTime) / 1000;
+            
+            // Update final message with metrics
+            setMessages(prev => {
+              const updated = [...prev];
+              const lastIndex = updated.length - 1;
+              updated[lastIndex] = {
+                ...updated[lastIndex],
+                content: streamedContent,
+                metrics: {
+                  totalTime,
+                  // Estimate tokens using characters/4 as a rough approximation
+                  totalTokens: Math.round(streamedContent.length / 4),
+                  tokensPerSecond: Math.round((streamedContent.length / 4) / totalTime)
+                }
+              };
+              return updated;
+            });
+        
+          } catch (error) {
+            // Remove the empty assistant message on error
+            setMessages(prev => prev.slice(0, -1));
+            console.error("OpenAI streaming error:", error);
+            toast({
+              title: "Error",
+              description: error instanceof Error ? error.message : "Failed to send message",
+              variant: "destructive",
+            });
+          } finally {
+            setIsLoading(false);
           }
         } else {
           response = await fetch(`${baseUrl}/chat/completions`, {
@@ -446,9 +554,8 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
               Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model,
+              model,              
               messages: messagesToSend,
-              // we shouldnt pass any of these unless they are changed from the defaults
               ...filterAISettings(settings),
             }),
           });
