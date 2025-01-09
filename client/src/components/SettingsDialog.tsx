@@ -170,6 +170,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         />
         <Label htmlFor="fit-view-on-init">Fit view on load</Label>
       </div>
+
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="streaming"
+          checked={settings.streaming}
+          onCheckedChange={(checked) => 
+            setSettings({ ...settings, streaming: checked })
+          }
+        />
+        <Label htmlFor="streaming">Enable Streaming</Label>
+      </div>
+
       <div className="space-y-4 mt-4">
         <div className="flex justify-between items-center">
           <div>
