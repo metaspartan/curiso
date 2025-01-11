@@ -1,1 +1,1 @@
-{}
+{"com.curiso.ai":{"identifier":"com.curiso.ai","description":"","local":true,"windows":["*"],"permissions":["http:default",{"identifier":"http:default","allow":[{"url":"http://**"},{"url":"https://**"},{"url":"http://*:*"},{"url":"https://*:*"}]}]}}

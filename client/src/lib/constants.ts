@@ -1,3 +1,10 @@
+import ollamaLogo from "@/assets/ollama-logo.svg";
+import exoLogo from "@/assets/exo.png";
+import janLogo from "@/assets/jan.svg";
+import lmstudioLogo from "@/assets/lmstudio.png";
+import vllmlogo from "@/assets/vllm.svg";
+import logo from "@/assets/logo.svg";
+
 export const themeColors = [
     // Blues & Teals
     { name: 'Teal', value: 'hsl(183 31% 26%)' },
@@ -29,7 +36,47 @@ export const DEFAULT_AI_SETTINGS = {
     top_p: 0,
     max_tokens: 8192,
     frequency_penalty: 0,
-    presence_penalty: 0
+    presence_penalty: 0,
+    streaming: false // Added streaming property
   };
   
   export type AISettings = typeof DEFAULT_AI_SETTINGS;
+
+  export const PRESET_ENDPOINTS = [
+    {
+      name: "Exo",
+      url: "http://localhost:52415/v1",
+      description: "Local Exo instance",
+      icon: exoLogo
+    },
+    {
+      name: "Ollama",
+      url: "http://localhost:11434/v1",
+      description: "Local Ollama instance",
+      icon: ollamaLogo
+    },
+    {
+      name: "Jan.ai",
+      url: "http://localhost:1337/v1",
+      description: "Local Jan.ai instance",
+      icon: janLogo
+    },
+    {
+      name: "LM Studio",
+      url: "http://localhost:1234/v1",
+      description: "Local LM Studio instance",
+      icon: lmstudioLogo
+    },
+    {
+      name: "vLLM",
+      url: "http://localhost:8000/v1",
+      description: "Local vLLM instance",
+      icon: vllmlogo
+    },
+    {
+      name: "Custom",
+      url: "",
+      description: "Custom endpoint URL",
+      icon: logo
+    }
+  ] as const;

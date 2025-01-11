@@ -1,0 +1,24 @@
+{
+  "identifier": "com.curiso.ai",
+  "windows": ["*"],
+  "permissions": [
+    "http:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "http://**"
+        },
+        {
+          "url": "https://**"
+        },
+        {
+          "url": "http://*:*"
+        },
+        {
+          "url": "https://*:*"
+        }
+      ]
+    }
+  ]
+}

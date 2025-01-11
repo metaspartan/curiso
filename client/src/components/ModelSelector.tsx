@@ -6,6 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 import logo from "@/assets/logo.svg"
+import { PRESET_ENDPOINTS } from "@/lib/constants";
+import { modelService } from "@/lib/localmodels";
+import { defaultLocalModels } from "@/lib/localmodels";
+import { useEffect } from "react";
+
 interface ModelSelectorProps {
   models: AIModel[];
   selectedModel: string;
@@ -14,7 +19,16 @@ interface ModelSelectorProps {
 
 export function ModelSelector({ models, selectedModel, onSelect }: ModelSelectorProps) {
   const settings = useStore((state) => state.settings);
+  const setSettings = useStore((state) => state.setSettings);
   const allModels = [...models, ...(settings.customModels || [])];
+
+  const getEndpointIcon = (model: AIModel | CustomModel) => {
+    if ('endpoint' in model) {
+      const preset = PRESET_ENDPOINTS.find(p => p.url === model.endpoint);
+      return preset?.icon;
+    }
+    return null;
+  };
 
   const getModelAuthStatus = (model: AIModel | CustomModel) => {
     if ('requiresAuth' in model) {
@@ -53,8 +67,8 @@ export function ModelSelector({ models, selectedModel, onSelect }: ModelSelector
             <CardContent className="p-4 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <img
-                    src={model.thumbnailUrl || logo}
+                <img
+                    src={getEndpointIcon(model) || model.thumbnailUrl || logo}
                     alt={model.name}
                     className="w-8 h-8 [&>path]:text-foreground"
                   />

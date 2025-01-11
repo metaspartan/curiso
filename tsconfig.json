@@ -14,7 +14,7 @@
     "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
     "baseUrl": ".",
-    "types": ["node", "vite/client"],
+    "types": ["node", "vite/client", "@tauri-apps/api"],
     "paths": {
       "@db": ["./db/index.ts"],
       "@db/*": ["./db/*"],

@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef, useId, memo } from "react";
 import { Handle, Position, NodeProps, useReactFlow } from "reactflow";
 import {
   Card,
@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, Trash2, Loader2, Maximize2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
   Select,
   SelectContent,
@@ -19,16 +18,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AIModel, CustomModel, Message, availableModels } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { AIModel, APIResponseMetrics, CustomModel, Message, availableModels } from "@/lib/types";
+import { cn, sanitizeChatMessages } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { Copy, Check } from "lucide-react";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { NodeResizer } from 'reactflow';
 import Anthropic from '@anthropic-ai/sdk';
-import { DEFAULT_AI_SETTINGS, AISettings } from '@/lib/constants';
+import { DEFAULT_AI_SETTINGS, AISettings, PRESET_ENDPOINTS } from '@/lib/constants';
 import { ImageUpload } from "./ImageUpload";
-
+import logo from "@/assets/logo.svg";
+import { RAGService } from "@/lib/rag";
+// import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "./ui/context-menu";
+import { RAGSelector } from "./RAGSelector";
+import { CodeBlock } from "./CodeBlock";
+import remarkGfm from 'remark-gfm';
 
 export function ChatNode({ id, data: initialData }: NodeProps) {
   const [input, setInput] = useState("");
@@ -44,9 +47,16 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({});
   const [imageData, setImageData] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [selectedDocs, setSelectedDocs] = useState<string[]>(
+    initialData.selectedDocuments || settings.rag.documents.map(d => d.id)
+  );
+  const [selectedWebsites, setSelectedWebsites] = useState<string[]>(
+    initialData.selectedWebsites || settings.rag.websites?.map(w => w.id) || []
+  );
 
   const copyToClipboard = async (text: string, id: string) => {
-    // console.log('Attempting to copy text:', text);
+    console.log('Attempting to copy text:', text);
     console.log('Using ID:', id);
     try {
       await navigator.clipboard.writeText(text);
@@ -152,7 +162,6 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     if (settings.temperature !== DEFAULT_AI_SETTINGS.temperature) {
       filteredSettings.temperature = settings.temperature;
     }
-  
     return filteredSettings;
   }
 
@@ -170,8 +179,20 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
            "";
   };
 
+  const formatSource = (metadata: any) => {
+    console.log("Formatting source:", metadata);
+    console.log("Type:", metadata.type);
+    if (metadata.type === 'website') {
+      return metadata.source;
+    }
+    return metadata.filename;
+  };
+
   const sendMessage = useCallback(async () => {
     if (!input.trim()) return;
+
+    const startTime = performance.now();
+    let metrics: APIResponseMetrics = {};
 
     const newMessage: Message = {
       role: "user",
@@ -184,6 +205,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     setImageData(null);
     setPreviewImage(null);
     setIsLoading(true);
+    setUploadedFileName(null);
 
     const selectedModel = [...availableModels, ...(settings.customModels || [])].find((m) => m.id === model);
     if (!selectedModel) {
@@ -209,6 +231,35 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
       return;
     }
 
+    let context = '';
+    if (settings.rag?.enabled) {
+      console.log("RAG enabled, searching for:", input);
+      const ragService = new RAGService();
+      const relevantDocs = await ragService.search(input, selectedDocs, selectedWebsites);
+    
+      console.log("Relevant docs, Search results:", relevantDocs);
+      
+      if (relevantDocs.length > 0) {
+        context = relevantDocs
+          .map(doc => {
+            const metadata = typeof doc.metadata === 'string' 
+              ? JSON.parse(doc.metadata) 
+              : doc.metadata;
+            console.log("Processing metadata:", metadata);
+            const source = formatSource(metadata);
+            return `[From ${source}]: ${doc.content}`;
+          })
+          .join('\n\n');
+      }
+    }
+
+    // Add context to system prompt if available
+    const enhancedSystemPrompt = context 
+      ? `${settings.systemPrompt}\n\nRelevant context for your response:\n${context}`
+      : settings.systemPrompt;
+
+    console.log("Enhanced system prompt:", enhancedSystemPrompt);
+
     try {
       
       const contextMessages = getContextFromSourceNodes();
@@ -226,68 +277,326 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
           dangerouslyAllowBrowser: true
         });
       
-        const response = await anthropic.messages.create({
-          model: model,
-          system: settings.systemPrompt,
-          messages: allMessages.map(msg => ({
-            role: msg.role === "user" ? "user" : "assistant",
-            content: msg.content
-          })),
-          max_tokens: 8192,
-          ...filterAnthropicAISettings(settings),
-        });
-      
-        const assistantMessage: Message = {
-          role: "assistant",
-          content: response.content[0].text,
-        };
-      
-        setMessages((prev) => [...prev, assistantMessage]);
+        if (settings.streaming) {
+          try {
+            const startTime = performance.now();
+            
+            // Create empty assistant message first
+            const assistantMessage: Message = {
+              role: "assistant",
+              content: "",
+            };
+            
+            // Add the empty assistant message
+            setMessages(prev => [...prev, assistantMessage]);
+        
+            let streamedContent = "";
+            let loadingDots = "";
+            let loadingInterval: NodeJS.Timeout;
+        
+            // Start the loading animation
+            loadingInterval = setInterval(() => {
+              loadingDots = loadingDots === "⬤" ? "⬤" : "⬤";
+              setMessages(prev => {
+                const updated = [...prev];
+                const lastIndex = updated.length - 1;
+                updated[lastIndex] = {
+                  ...updated[lastIndex],
+                  content: streamedContent + loadingDots
+                };
+                return updated;
+              });
+            }, 500);
+        
+            // Use streamMessages.create() for streaming
+            const stream = await anthropic.messages.stream({
+              model: model,
+              system: enhancedSystemPrompt,
+              messages: sanitizeChatMessages(allMessages.map(msg => ({
+                role: msg.role === "user" ? "user" : "assistant",
+                content: msg.content
+              }))),
+              max_tokens: 8192,
+              ...filterAnthropicAISettings(settings),
+            });
+        
+            // Handle the stream
+            for await (const chunk of stream) {
+              if (chunk.type === 'content_block_delta') {
+                const content = chunk.delta.text;
+                if (content) {
+                  streamedContent += content;
+                  setMessages(prev => {
+                    const updated = [...prev];
+                    const lastIndex = updated.length - 1;
+                    updated[lastIndex] = {
+                      ...updated[lastIndex],
+                      content: streamedContent + loadingDots
+                    };
+                    return updated;
+                  });
+                }
+              }
+            }
+        
+            // Clean up loading animation
+            clearInterval(loadingInterval);
+        
+            // Calculate metrics after stream is complete
+            const endTime = performance.now();
+            const totalTime = (endTime - startTime) / 1000;
+            
+            // Update final message with metrics
+            setMessages(prev => {
+              const updated = [...prev];
+              const lastIndex = updated.length - 1;
+              updated[lastIndex] = {
+                ...updated[lastIndex],
+                content: streamedContent,
+                metrics: {
+                  totalTime,
+                  // Estimate tokens using characters/4 as a rough approximation
+                  totalTokens: Math.round(streamedContent.length / 4),
+                  tokensPerSecond: Math.round((streamedContent.length / 4) / totalTime)
+                }
+              };
+              return updated;
+            });
+        
+          } catch (error) {
+            // Remove the empty assistant message on error
+            setMessages(prev => prev.slice(0, -1));
+            console.error("Anthropic streaming error:", error);
+            // throw error;
+          }
+        } else {
+          const response = await anthropic.messages.create({
+            model: model,
+            system: enhancedSystemPrompt,
+            messages: 
+            sanitizeChatMessages(allMessages.map(msg => ({
+              role: msg.role === "user" ? "user" : "assistant",
+              content: msg.content
+            }))),
+            max_tokens: 8192,
+            ...filterAnthropicAISettings(settings),
+          });
+
+          metrics = {
+            completion_tokens: response.usage?.output_tokens,
+            prompt_tokens: response.usage?.input_tokens,
+            total_tokens: response.usage?.input_tokens + response.usage?.output_tokens,
+            model: response.model
+          };
+    
+          const endTime = performance.now();
+          const totalTime = (endTime - startTime) / 1000;
+    
+          const assistantMessage: Message = {
+            role: "assistant",
+            // @ts-ignore anthropic returns content as an array
+            content: response.content[0].text,
+            metrics: {
+              tokensPerSecond: metrics.completion_tokens ? metrics.completion_tokens / totalTime : undefined,
+              totalTokens: metrics.completion_tokens,
+              totalTime
+            }
+          };
+  
+          setMessages((prev) => [...prev, assistantMessage]);
+        }
+        
       } else {
+
         const messageContent = imageData
         ? [
             { type: "text", text: input },
             { type: "image_url", image_url: { url: imageData } }
           ]
         : input;
-        response = await fetch(`${baseUrl}/chat/completions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: 'system', content: settings.systemPrompt },
-              ...allMessages.slice(0, -1),
-              { role: "user", content: messageContent }
-            ].filter(m => m.content),
-            // we shouldnt pass any of these unless they are changed from the defaults
-            ...filterAISettings(settings),
-          }),
-        });
-  
-        if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(`API error: ${response.status} - ${errorData}`);
+
+        // Check if using O1 models
+        const isO1Model = model.includes('o1-mini') || model.includes('o1') || model.includes('o1-preview');
+        const messagesToSend = sanitizeChatMessages([
+          ...((!isO1Model && enhancedSystemPrompt) ? [{ role: 'system', content: enhancedSystemPrompt }] : []),
+          ...allMessages.slice(0, -1),
+          { role: "user", content: messageContent }
+        ]).filter(m => m.content);
+
+        if (settings.streaming) {
+          try {
+            const startTime = performance.now();
+        
+            // Create empty assistant message first
+            const assistantMessage: Message = {
+              role: "assistant",
+              content: "",
+            };
+            
+            // Add the empty assistant message
+            setMessages(prev => [...prev, assistantMessage]);
+        
+            let streamedContent = "";
+            let loadingDots = "";
+            let loadingInterval: NodeJS.Timeout;
+        
+            // Start the loading animation
+            loadingInterval = setInterval(() => {
+              loadingDots = loadingDots === "⬤" ? "⬤" : "⬤";
+              setMessages(prev => {
+                const updated = [...prev];
+                const lastIndex = updated.length - 1;
+                updated[lastIndex] = {
+                  ...updated[lastIndex],
+                  content: streamedContent + loadingDots
+                };
+                return updated;
+              });
+            }, 500);
+        
+            response = await fetch(`${baseUrl}/chat/completions`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model,
+                messages: messagesToSend,
+                stream: true,
+                ...filterAISettings(settings),
+              }),
+            });
+        
+            if (!response.ok) {
+              clearInterval(loadingInterval);
+              const errorData = await response.text();
+              console.error(`API error: ${response.status} - ${errorData}`);
+            }
+        
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+        
+            while (true) {
+              const { done, value } = await reader?.read() || {};
+              if (done) break;
+              
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split("\n");
+              
+              for (const line of lines) {
+                if (line.trim() === "") continue;
+                const message = line.replace(/^data: /, "");
+                if (message === "[DONE]") break;
+                
+                try {
+                  const parsed = JSON.parse(message);
+                  const content = parsed.choices[0].delta.content;
+                  if (content) {
+                    streamedContent += content;
+                    setMessages(prev => {
+                      const updated = [...prev];
+                      const lastIndex = updated.length - 1;
+                      updated[lastIndex] = {
+                        ...updated[lastIndex],
+                        content: streamedContent + loadingDots
+                      };
+                      return updated;
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error parsing message:", error);
+                }
+              }
+            }
+        
+            // Clean up loading animation
+            clearInterval(loadingInterval);
+        
+            // Calculate metrics after stream is complete
+            const endTime = performance.now();
+            const totalTime = (endTime - startTime) / 1000;
+            
+            // Update final message with metrics
+            setMessages(prev => {
+              const updated = [...prev];
+              const lastIndex = updated.length - 1;
+              updated[lastIndex] = {
+                ...updated[lastIndex],
+                content: streamedContent,
+                metrics: {
+                  totalTime,
+                  // Estimate tokens using characters/4 as a rough approximation
+                  totalTokens: Math.round(streamedContent.length / 4),
+                  tokensPerSecond: Math.round((streamedContent.length / 4) / totalTime)
+                }
+              };
+              return updated;
+            });
+        
+          } catch (error) {
+            // Remove the empty assistant message on error
+            setMessages(prev => prev.slice(0, -1));
+            console.error("OpenAI streaming error:", error);
+            toast({
+              title: "Error",
+              description: error instanceof Error ? error.message : "Failed to send message",
+              variant: "destructive",
+            });
+          } finally {
+            setIsLoading(false);
+          }
+        } else {
+          response = await fetch(`${baseUrl}/chat/completions`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model,              
+              messages: messagesToSend,
+              ...filterAISettings(settings),
+            }),
+          });
+      
+          if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(`API error: ${response.status} - ${errorData}`);
+          }
+      
+          result = await response.json();
+      
+          if (!result.choices?.[0]?.message?.content) {
+            throw new Error("Invalid response format from API");
+          }
+      
+          metrics = {
+            completion_tokens: result.usage?.completion_tokens,
+            prompt_tokens: result.usage?.prompt_tokens,
+            total_tokens: result.usage?.total_tokens,
+            model: result.model
+          };
+      
+          const endTime = performance.now();
+          const totalTime = (endTime - startTime) / 1000;
+      
+          const assistantMessage: Message = {
+            role: "assistant",
+            content: result.choices[0].message.content,
+            metrics: {
+              tokensPerSecond: metrics.completion_tokens ? metrics.completion_tokens / totalTime : undefined,
+              totalTokens: metrics.completion_tokens,
+              totalTime
+            }
+          };
+      
+          setMessages((prev) => [...prev, assistantMessage]);
+          setInput("");
+          setImageData(null);
+          setPreviewImage(null);
+          setUploadedFileName(null);
         }
-  
-        result = await response.json();
-  
-        if (!result.choices?.[0]?.message?.content) {
-          throw new Error("Invalid response format from API");
-        }
-  
-        const assistantMessage: Message = {
-          role: "assistant",
-          content: result.choices[0].message.content,
-        };
-  
-        setMessages((prev) => [...prev, assistantMessage]);
-        setInput("");
-        setImageData(null);
-        setPreviewImage(null);
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -302,6 +611,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
       setPreviewImage(null);
       setImageData(null); 
       setIsLoading(false);
+      setUploadedFileName(null);
     }
   }, [input, messages, model, settings, getContextFromSourceNodes, toast]);
 
@@ -312,8 +622,12 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     const currentNode = currentBoard.nodes.find(n => n.id === id);
     if (!currentNode) return;
   
-    // Only update if the data has actually changed
-    if (currentNode.data.messages !== messages || currentNode.data.model !== model) {
+    if (
+      currentNode.data.messages !== messages || 
+      currentNode.data.model !== model ||
+      currentNode.data.selectedDocuments !== selectedDocs ||
+      currentNode.data.selectedWebsites !== selectedWebsites
+    ) {
       setSettings({
         ...settings,
         boards: settings.boards.map(board => 
@@ -322,7 +636,16 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
                 ...board,
                 nodes: board.nodes.map(node => 
                   node.id === id
-                    ? { ...node, data: { ...node.data, messages, model } }
+                    ? { 
+                        ...node, 
+                        data: { 
+                          ...node.data, 
+                          messages, 
+                          model,
+                          selectedDocuments: selectedDocs,
+                          selectedWebsites: selectedWebsites 
+                        } 
+                      }
                     : node
                 )
               }
@@ -330,7 +653,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
         )
       });
     }
-  }, [messages, model]);
+  }, [messages, model, selectedDocs, selectedWebsites]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -391,8 +714,8 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
             key={i}
             className={`${
               msg.role === "user"
-                ? "bg-primary text-primary-foreground ml-4"
-                : "bg-muted text-muted-foreground mr-4"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground"
             } p-3 rounded-lg relative group`}
           >
             <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -416,69 +739,70 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
                   className="max-w-sm rounded-md"
                 />
               )}
-              <ReactMarkdown
-                components={{
-                  h1: (props) => <h1 {...props} className="text-xl font-bold mt-6 mb-4" />,
-                  h2: (props) => <h2 {...props} className="text-lg font-semibold mt-5 mb-3" />,
-                  h3: (props) => <h3 {...props} className="text-md font-semibold mt-4 mb-2" />,
-                  p: (props) => <p {...props} className="mb-4 last:mb-0" />,
-                  ul: (props) => <ul {...props} className="mb-4 list-disc pl-6" />,
-                  ol: (props) => <ol {...props} className="mb-4 list-decimal pl-6" />,
-                  li: (props) => <li {...props} className="mb-1" />,
-                  code: ({ node, className, children, ...props }) => {
-                    const match = /language-(\w+)/.exec(className || "");
-                    const codeId = `code-${i}-${String(children).slice(0, 20)}`;
-
-                    return match ? (
-                      <div className="mb-4 relative group">
-                      <div className="absolute right-2 top-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
-                        {/* <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6 hover:bg-muted/50"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            copyToClipboard(String(children).replace(/\n$/, ""), codeId);
-                          }}
-                        >
-                          {copiedStates[codeId] ? (
-                            <Check className="h-3 w-3 text-green-500" />
-                          ) : (
-                            <Copy className="h-3 w-3" />
-                          )}
-                        </Button> */}
-                      </div>
-                        <div className="rounded-md">
-                          <SyntaxHighlighter
-                            language={match[1]}
-                            style={oneDark}
-                            customStyle={{
-                              margin: 0,
-                              minWidth: '100%',
-                              width: '100%',
-                              borderRadius: '0.375rem',
-                            }}
-                          >
-                            {String(children).replace(/\n$/, "")}
-                          </SyntaxHighlighter>
-                        </div>
-                      </div>
-                    ) : (
-                      <code className={cn("bg-muted px-1.5 py-0.5 rounded-md text-sm", className)} {...props}>
-                        {children}
-                      </code>
-                    );
-                  }
-                }}
-              >
-                {msg.content}
-              </ReactMarkdown>
+<ReactMarkdown
+  components={{
+    code: CodeBlock as any,
+    pre: ({ children }) => <pre className="p-0 m-0" onClick={e => e.stopPropagation()}>{children}</pre>,
+    h1: ({ children }) => <h1 className="text-2xl font-bold mb-2">{children}</h1>,
+    h2: ({ children }) => <h2 className="text-xl font-bold mb-2">{children}</h2>,
+    h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
+    h4: ({ children }) => <h4 className="text-base font-bold mb-2">{children}</h4>,
+    p: ({ children }) => <p className="mt-1 mb-2">{children}</p>,
+    ul: ({ children }) => <ul className="list-disc list-inside mb-4">{children}</ul>,
+    ol: ({ children }) => <ol className="list-decimal list-inside mb-4">{children}</ol>,
+    li: ({ children }) => <li className="mb-2">{children}</li>,
+    a: ({ href, children }) => (
+      <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    ),
+    blockquote: ({ children }) => (
+      <blockquote className="border-l-4 border-primary pl-4 italic mb-4">
+        {children}
+      </blockquote>
+    ),
+    img: ({ src, alt }) => (
+      <img src={src} alt={alt} className="max-w-full h-auto rounded-lg mb-4" />
+    ),
+    table: ({ children }) => (
+      <div className="overflow-x-auto mb-4">
+        <table className="min-w-full divide-y divide-border">
+          {children}
+        </table>
+      </div>
+    ),
+    th: ({ children }) => (
+      <th className="px-4 py-2 bg-muted font-medium">{children}</th>
+    ),
+    td: ({ children }) => (
+      <td className="px-4 py-2 border-t">{children}</td>
+    ),
+  }}
+  remarkPlugins={[remarkGfm]}
+>
+  {msg.content}
+</ReactMarkdown>
+              {msg.role === "assistant" && msg.metrics && (
+                <div className="text-xs text-gray-500 mt-1">
+                  {msg.metrics.totalTokens && `${msg.metrics.totalTokens} tokens`}
+                  {msg.metrics.tokensPerSecond && ` · ${msg.metrics.tokensPerSecond.toFixed(1)} tok/s`}
+                  {msg.metrics.totalTime && ` · ${msg.metrics.totalTime.toFixed(2)}s`}
+                </div>
+              )}
             </div>
           ))}
         </div>
       </CardContent>
-
+      {settings.rag?.enabled && (
+        <div className="px-4 pb-2">
+          <RAGSelector
+            selectedDocs={selectedDocs}
+            selectedWebsites={selectedWebsites}
+            onDocsChange={setSelectedDocs}
+            onWebsitesChange={setSelectedWebsites}
+          />
+        </div>
+      )}
       <CardFooter className="p-2 pt-0 gap-2 flex-col">
         <div className="flex w-full gap-2">
 
@@ -565,10 +889,14 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
             <SelectTrigger className="w-[340px] h-8">
               <SelectValue placeholder="Select model">
                 <div className="flex items-center gap-2">
-                  <img
-                    src={currentModel?.thumbnailUrl}
-                    alt={currentModel?.name}
-                    className="w-4 h-4"
+                <img 
+                    src={
+                      currentModel && 'endpoint' in currentModel 
+                        ? PRESET_ENDPOINTS.find(p => p.url === currentModel.endpoint)?.icon || currentModel.thumbnailUrl || logo
+                        : currentModel?.thumbnailUrl || logo
+                    } 
+                    alt={currentModel?.name} 
+                    className="w-4 h-4" 
                   />
                   <span className="text-xs">{currentModel?.name}</span>
                 </div>
@@ -578,13 +906,21 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
             {[...availableModels, ...(settings.customModels || [])].map((m) => (
               <SelectItem key={m.id} value={m.id}>
                 <div className="flex items-center gap-2">
-                  <img src={m.thumbnailUrl} alt={m.name} className="w-4 h-4" />
+                  <img 
+                    src={
+                      'endpoint' in m 
+                        ? PRESET_ENDPOINTS.find(p => p.url === m.endpoint)?.icon || m.thumbnailUrl || logo
+                        : m.thumbnailUrl || logo
+                    } 
+                    alt={m.name} 
+                    className="w-4 h-4" 
+                  />
                   <span>{m.name}</span>
                   {'endpoint' in m && <span className="text-xs text-muted-foreground">(Custom)</span>}
                 </div>
               </SelectItem>
             ))}
-            </SelectContent>
+          </SelectContent>
           </Select>
           <div className="flex gap-1">
           <Button

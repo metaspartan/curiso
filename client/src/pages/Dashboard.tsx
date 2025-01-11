@@ -52,7 +52,7 @@ function Flow({ settingsOpen, setSettingsOpen }: { settingsOpen: boolean; setSet
     // Update UI immediately
     useStore.setState({ settings: newSettings });
     // Debounce storage update
-    debouncedSetSettings(newSettings);
+    // debouncedSetSettings(newSettings);
   };
 
   const onEdgesChange = (changes: EdgeChange[]) => {
@@ -67,8 +67,8 @@ function Flow({ settingsOpen, setSettingsOpen }: { settingsOpen: boolean; setSet
     
     // Update UI immediately
     useStore.setState({ settings: newSettings });
-    // Debounce storage update
-    debouncedSetSettings(newSettings);
+    // // Debounce storage update
+    // debouncedSetSettings(newSettings);
   };
 
   const onConnect = (connection: Connection) => {
@@ -104,8 +104,8 @@ function Flow({ settingsOpen, setSettingsOpen }: { settingsOpen: boolean; setSet
   
     // Update UI immediately
     useStore.setState({ settings: newSettings });
-    // Debounce storage update
-    debouncedSetSettings(newSettings);
+    // // Debounce storage update
+    // debouncedSetSettings(newSettings);
   };
 
   useEffect(() => {
