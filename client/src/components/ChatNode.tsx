@@ -141,11 +141,26 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
   function filterAISettings(settings: Partial<AISettings>) {
     const filteredSettings: Partial<AISettings> = {};
     
-    (Object.keys(DEFAULT_AI_SETTINGS) as Array<keyof AISettings>).forEach(key => {
-      if (settings[key] !== DEFAULT_AI_SETTINGS[key] && settings[key] !== undefined) {
-        filteredSettings[key] = settings[key];
-      }
-    });
+    // Only include API-relevant settings
+    if (settings.temperature !== DEFAULT_AI_SETTINGS.temperature) {
+      filteredSettings.temperature = settings.temperature;
+    }
+    
+    if (settings.top_p !== DEFAULT_AI_SETTINGS.top_p) {
+      filteredSettings.top_p = settings.top_p;
+    }
+  
+    if (settings.max_tokens !== DEFAULT_AI_SETTINGS.max_tokens) {
+      filteredSettings.max_tokens = settings.max_tokens;
+    }
+  
+    if (settings.frequency_penalty !== DEFAULT_AI_SETTINGS.frequency_penalty) {
+      filteredSettings.frequency_penalty = settings.frequency_penalty;
+    }
+  
+    if (settings.presence_penalty !== DEFAULT_AI_SETTINGS.presence_penalty) {
+      filteredSettings.presence_penalty = settings.presence_penalty;
+    }
     
     return filteredSettings;
   }
