@@ -18,7 +18,7 @@ import { useStore } from "@/lib/store";
 import 'reactflow/dist/style.css';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings } from 'lucide-react';
+import { Plus, Settings, MessageCirclePlus } from 'lucide-react';
 import { ChatNode } from '@/components/ChatNode';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { nanoid } from 'nanoid';
@@ -179,7 +179,7 @@ function Flow({ settingsOpen, setSettingsOpen }: { settingsOpen: boolean; setSet
     </Panel>
       <Panel position="top-right" className="space-x-2">
         <Button onClick={addNode} size="icon">
-          <Plus className="h-4 w-4" />
+          <MessageCirclePlus className="h-4 w-4" />
         </Button>
         <Button onClick={() => setSettingsOpen(true)} size="icon" variant="outline">
           <Settings className="h-4 w-4" />
