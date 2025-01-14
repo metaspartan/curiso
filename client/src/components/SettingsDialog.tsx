@@ -67,9 +67,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             <TabsList>
               <TabsTrigger value="settings">Settings</TabsTrigger>
               <TabsTrigger value="api">API Keys</TabsTrigger>
-              <TabsTrigger value="custom-models">Custom Models</TabsTrigger>
+              <TabsTrigger value="custom-models">Models</TabsTrigger>
               <TabsTrigger value="parameters">Inference Params</TabsTrigger>
               <TabsTrigger value="rag">RAG</TabsTrigger>
+              <TabsTrigger value="hotkeys">Hotkeys</TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="settings" className="space-y-4">
@@ -79,7 +80,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           
             <div className="flex justify-center">
             <img src={logo} alt="Curiso.ai" title="Curiso.ai" className="w-12 h-12" /></div>
-            <div className="flex justify-center"><p className="text-sm text-muted-foreground justify-center mb-2">Version v1.1.5 by <a 
+            <div className="flex justify-center"><p className="text-sm text-muted-foreground justify-center mb-2">Version v1.1.6 by <a 
               href="https://github.com/metaspartan/curiso" 
               onClick={(e) => {
                 e.preventDefault();
@@ -469,6 +470,65 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </div>
             </div>
             </Card>
+        </TabsContent>
+
+        <TabsContent value="hotkeys" className="space-y-4">
+          <Card className="p-4">
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label>New Node</Label>
+                <Input
+                  value={settings.hotkeys.newNode}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      hotkeys: { ...settings.hotkeys, newNode: e.target.value }
+                    })
+                  }
+                  placeholder="Cmd+N"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>New Board</Label>
+                <Input
+                  value={settings.hotkeys.newBoard}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      hotkeys: { ...settings.hotkeys, newBoard: e.target.value }
+                    })
+                  }
+                  placeholder="Cmd+Shift+N"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Delete Node</Label>
+                <Input
+                  value={settings.hotkeys.dNode}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      hotkeys: { ...settings.hotkeys, dNode: e.target.value }
+                    })
+                  }
+                  placeholder="Cmd+D"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Delete Board</Label>
+                <Input
+                  value={settings.hotkeys.deleteBoard}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      hotkeys: { ...settings.hotkeys, deleteBoard: e.target.value }
+                    })
+                  }
+                  placeholder="Cmd+Shift+D"
+                />
+              </div>
+            </div>
+          </Card>
         </TabsContent>
         </Tabs>
       </DialogContent>

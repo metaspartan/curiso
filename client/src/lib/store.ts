@@ -7,7 +7,7 @@ import { themeColors } from './constants';
 import { defaultLocalModels } from './localmodels';
 import { VectorDB } from './db';
 
-const STORE_VERSION = 2;
+const STORE_VERSION = 3;
 const MASTER_KEY = import.meta.env.VITE_MASTER_KEY ?? 'default-master-key';
 const FALLBACK_KEY = import.meta.env.VITE_FALLBACK_KEY ?? 'default-fallback-key';
 
@@ -38,6 +38,12 @@ const defaultBoard = {
 };
 
 const defaultSettings: GlobalSettings = {
+  hotkeys: {
+    newNode: 'Cmd+N',
+    newBoard: 'Cmd+Shift+N',
+    deleteBoard: 'Cmd+Shift+D',
+    dNode: 'Cmd+D'
+  },
   version: STORE_VERSION,
   rag: {
     enabled: false,
@@ -97,6 +103,14 @@ const migrations = {
         metrics: doc.metrics || {}
       })) || [],
       websites: state.rag?.websites || []
+    }
+  }),
+  2: (state: any) => ({
+    ...state,
+    version: 3,
+    hotkeys: {
+      ...defaultSettings.hotkeys,
+      ...state.hotkeys
     }
   })
 };

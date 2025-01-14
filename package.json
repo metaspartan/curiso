@@ -1,6 +1,6 @@
 {
   "name": "curiso.ai",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "author": "Carsen Klock",
   "type": "module",
   "license": "MIT",
@@ -64,7 +64,9 @@
     "express-session": "^1.18.1",
     "framer-motion": "^11.13.1",
     "gpt-tokenizer": "^2.8.1",
+    "idb": "^8.0.1",
     "input-otp": "^1.2.4",
+    "js-tiktoken": "^1.0.16",
     "lucide-react": "^0.453.0",
     "memorystore": "^1.6.7",
     "nanoid": "^5.0.9",

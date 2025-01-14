@@ -14,6 +14,13 @@ export interface Message {
   };
 }
 
+export interface HotkeySettings {
+  newNode: string;
+  newBoard: string;
+  dNode: string;
+  deleteBoard: string;
+}
+
 export interface APIResponseMetrics {
   completion_tokens?: number;
   prompt_tokens?: number;
@@ -81,6 +88,7 @@ export interface CustomModel extends AIModel {
 }
 
 export interface GlobalSettings {
+  hotkeys: HotkeySettings;
   version: number;
   rag: RAGSettings;
   primaryColor: string;

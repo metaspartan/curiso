@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AIModel, APIResponseMetrics, CustomModel, Message, availableModels } from "@/lib/types";
-import { cn, sanitizeChatMessages } from "@/lib/utils";
+import { cn, isEqual, sanitizeChatMessages } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { Copy, Check } from "lucide-react";
 import { NodeResizer } from 'reactflow';
@@ -32,6 +32,7 @@ import { RAGService } from "@/lib/rag";
 import { RAGSelector } from "./RAGSelector";
 import { CodeBlock } from "./CodeBlock";
 import remarkGfm from 'remark-gfm';
+import { countTokens } from "@/lib/toksec";
 
 export function ChatNode({ id, data: initialData }: NodeProps) {
   const [input, setInput] = useState("");
@@ -118,11 +119,42 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
       ...settings,
       boards: settings.boards.map(board => 
         board.id === settings.currentBoardId
-          ? { ...board, nodes: board.nodes.filter(n => n.id !== id) }
+          ? {
+              ...board,
+              nodes: board.nodes.filter(node => !selectedNodes.some(selected => selected.id === node.id)),
+              edges: board.edges.filter(edge => 
+                !selectedNodes.some(node => node.id === edge.source || node.id === edge.target)
+              )
+            }
           : board
       )
     });
+    // delete this node from the current board
+    setNodes(nodes => nodes.filter(n => n.id !== id));
   }, [id, settings, setSettings]);
+
+  const updateMessageWithTokenMetrics = async (streamedContent: string, startTime: number) => {
+    const endTime = performance.now();
+    const totalTime = (endTime - startTime) / 1000;
+    const tokenCount = await countTokens(streamedContent);
+    
+    setMessages(prev => {
+      return prev.map((message, index) => {
+        if (index === prev.length - 1) {
+          return {
+            ...message,
+            content: streamedContent,
+            metrics: {
+              totalTime,
+              totalTokens: tokenCount,
+              tokensPerSecond: Math.round(tokenCount / totalTime)
+            }
+          };
+        }
+        return message;
+      });
+    });
+  };
 
   const getEndpointForModel = (selectedModel: AIModel) => {
     if ('endpoint' in selectedModel) {
@@ -313,13 +345,15 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
             loadingInterval = setInterval(() => {
               loadingDots = loadingDots === "⬤" ? "⬤" : "⬤";
               setMessages(prev => {
-                const updated = [...prev];
-                const lastIndex = updated.length - 1;
-                updated[lastIndex] = {
-                  ...updated[lastIndex],
-                  content: streamedContent + loadingDots
-                };
-                return updated;
+                return prev.map((message, index) => {
+                  if (index === prev.length - 1) {
+                    return {
+                      ...message,
+                      content: streamedContent + loadingDots
+                    };
+                  }
+                  return message;
+                });
               });
             }, 500);
         
@@ -342,13 +376,15 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
                 if (content) {
                   streamedContent += content;
                   setMessages(prev => {
-                    const updated = [...prev];
-                    const lastIndex = updated.length - 1;
-                    updated[lastIndex] = {
-                      ...updated[lastIndex],
-                      content: streamedContent + loadingDots
-                    };
-                    return updated;
+                    return prev.map((message, index) => {
+                      if (index === prev.length - 1) {
+                        return {
+                          ...message,
+                          content: streamedContent + loadingDots
+                        };
+                      }
+                      return message;
+                    });
                   });
                 }
               }
@@ -356,27 +392,9 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
         
             // Clean up loading animation
             clearInterval(loadingInterval);
-        
-            // Calculate metrics after stream is complete
-            const endTime = performance.now();
-            const totalTime = (endTime - startTime) / 1000;
-            
-            // Update final message with metrics
-            setMessages(prev => {
-              const updated = [...prev];
-              const lastIndex = updated.length - 1;
-              updated[lastIndex] = {
-                ...updated[lastIndex],
-                content: streamedContent,
-                metrics: {
-                  totalTime,
-                  // Estimate tokens using characters/4 as a rough approximation
-                  totalTokens: Math.round(streamedContent.length / 4),
-                  tokensPerSecond: Math.round((streamedContent.length / 4) / totalTime)
-                }
-              };
-              return updated;
-            });
+
+            // Update final message with accurate token metrics
+            await updateMessageWithTokenMetrics(streamedContent, startTime);
         
           } catch (error) {
             // Remove the empty assistant message on error
@@ -527,27 +545,9 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
         
             // Clean up loading animation
             clearInterval(loadingInterval);
-        
-            // Calculate metrics after stream is complete
-            const endTime = performance.now();
-            const totalTime = (endTime - startTime) / 1000;
-            
-            // Update final message with metrics
-            setMessages(prev => {
-              const updated = [...prev];
-              const lastIndex = updated.length - 1;
-              updated[lastIndex] = {
-                ...updated[lastIndex],
-                content: streamedContent,
-                metrics: {
-                  totalTime,
-                  // Estimate tokens using characters/4 as a rough approximation
-                  totalTokens: Math.round(streamedContent.length / 4),
-                  tokensPerSecond: Math.round((streamedContent.length / 4) / totalTime)
-                }
-              };
-              return updated;
-            });
+
+            await updateMessageWithTokenMetrics(streamedContent, startTime);
+      
         
           } catch (error) {
             // Remove the empty assistant message on error
@@ -630,45 +630,64 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     }
   }, [input, messages, model, settings, getContextFromSourceNodes, toast]);
 
+  const prevStateRef = useRef({
+    messages: messages,
+    model: model,
+    selectedDocs: selectedDocs,
+    selectedWebsites: selectedWebsites
+  });
+  
   useEffect(() => {
     const currentBoard = settings.boards.find(b => b.id === settings.currentBoardId);
     if (!currentBoard) return;
   
-    const currentNode = currentBoard.nodes.find(n => n.id === id);
-    if (!currentNode) return;
+    // Check if the node still exists in the current board
+    const nodeExists = currentBoard.nodes.some(node => node.id === id);
+    if (!nodeExists) return;
   
-    if (
-      currentNode.data.messages !== messages || 
-      currentNode.data.model !== model ||
-      currentNode.data.selectedDocuments !== selectedDocs ||
-      currentNode.data.selectedWebsites !== selectedWebsites
-    ) {
-      setSettings({
-        ...settings,
-        boards: settings.boards.map(board => 
-          board.id === settings.currentBoardId
-            ? {
-                ...board,
-                nodes: board.nodes.map(node => 
-                  node.id === id
-                    ? { 
-                        ...node, 
-                        data: { 
-                          ...node.data, 
-                          messages, 
-                          model,
-                          selectedDocuments: selectedDocs,
-                          selectedWebsites: selectedWebsites 
-                        } 
-                      }
-                    : node
-                )
-              }
-            : board
-        )
-      });
+    const prevState = prevStateRef.current;
+    const hasChanged = 
+      !isEqual(prevState.messages, messages) ||
+      prevState.model !== model ||
+      !isEqual(prevState.selectedDocs, selectedDocs) ||
+      !isEqual(prevState.selectedWebsites, selectedWebsites);
+  
+    if (hasChanged) {
+      prevStateRef.current = {
+        messages,
+        model,
+        selectedDocs,
+        selectedWebsites
+      };
+  
+      useStore.setState(state => ({
+        settings: {
+          ...state.settings,
+          boards: state.settings.boards.map(board => 
+            board.id === state.settings.currentBoardId
+              ? {
+                  ...board,
+                  nodes: board.nodes.map(node => 
+                    node.id === id
+                      ? { 
+                          ...node, 
+                          data: { 
+                            ...node.data, 
+                            messages, 
+                            model,
+                            selectedDocuments: selectedDocs,
+                            selectedWebsites: selectedWebsites 
+                          } 
+                        }
+                      : node
+                  )
+                }
+              : board
+          )
+        }
+      }));
     }
-  }, [messages, model, selectedDocs, selectedWebsites]);
+  }, [id, messages, model, selectedDocs, selectedWebsites, settings.currentBoardId]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -938,14 +957,14 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
           </SelectContent>
           </Select>
           <div className="flex gap-1">
-          <Button
+          {/* <Button
             variant="ghost"
             size="sm"
             onClick={deleteNode}
             className="h-8"
           >
             <Trash2 className="h-4 w-4" />
-          </Button>
+          </Button> */}
           <Button
             variant="ghost"
             size="sm"
