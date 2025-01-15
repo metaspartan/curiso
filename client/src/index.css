@@ -93,6 +93,8 @@
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
   --ring: 240 4.9% 83.9%;
+  --color-Input: hsl(var(--chart-1));
+  --color-Output: hsl(var(--chart-3));
   --chart-1: 220 70% 50%;
   --chart-5: 160 60% 45%;
   --chart-3: 30 80% 55%;
@@ -154,6 +156,8 @@
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
   --ring: 240 4.9% 83.9%;
+  --color-Input: hsl(var(--chart-1));
+  --color-Output: hsl(var(--chart-3));
   --chart-1: 220 70% 50%;
   --chart-5: 160 60% 45%;
   --chart-3: 30 80% 55%;
@@ -194,4 +198,11 @@
   --chart-38: 240 65% 55%;
   --chart-39: 160 70% 50%;
   --chart-40: 340 75% 45%;
+  }
+
+  .chart-dot {
+    height: 0.5rem;
+    width: 0.5rem;
+    border-radius: 9999px;
+    background-color: var(--dot-color);
   }

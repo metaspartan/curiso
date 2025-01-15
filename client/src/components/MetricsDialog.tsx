@@ -283,13 +283,13 @@ const getEndpointIcon = (modelId: string) => {
                             <Bar
                                 dataKey="Output"
                                 stackId="tokens"
-                                fill="var(--color-Output)"
+                                className="fill-[--color-Output]"
                                 radius={[0, 0, 4, 4]}
                             />
                             <Bar
                                 dataKey="Input"
                                 stackId="tokens"
-                                fill="var(--color-Input)"
+                                className="fill-[--color-Input]"
                                 radius={[4, 4, 0, 0]}
                             />
                             </BarChart>
