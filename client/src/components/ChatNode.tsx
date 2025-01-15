@@ -33,6 +33,7 @@ import { RAGSelector } from "./RAGSelector";
 import { CodeBlock } from "./CodeBlock";
 import remarkGfm from 'remark-gfm';
 import { countTokens } from "@/lib/toksec";
+import { useMetricsStore } from "@/lib/metricstore";
 
 export function ChatNode({ id, data: initialData }: NodeProps) {
   const [input, setInput] = useState("");
@@ -114,26 +115,35 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     return sortedMessages;
   }, [getEdges, getNode, id]);
 
-  const deleteNode = useCallback(() => {
-    setSettings({
-      ...settings,
-      boards: settings.boards.map(board => 
-        board.id === settings.currentBoardId
-          ? {
-              ...board,
-              nodes: board.nodes.filter(node => !selectedNodes.some(selected => selected.id === node.id)),
-              edges: board.edges.filter(edge => 
-                !selectedNodes.some(node => node.id === edge.source || node.id === edge.target)
-              )
-            }
-          : board
-      )
-    });
-    // delete this node from the current board
-    setNodes(nodes => nodes.filter(n => n.id !== id));
-  }, [id, settings, setSettings]);
+  // const deleteNode = useCallback(() => {
+  //   setSettings({
+  //     ...settings,
+  //     boards: settings.boards.map(board => 
+  //       board.id === settings.currentBoardId
+  //         ? {
+  //             ...board,
+  //             nodes: board.nodes.filter(node => !selectedNodes.some(selected => selected.id === node.id)),
+  //             edges: board.edges.filter(edge => 
+  //               !selectedNodes.some(node => node.id === edge.source || node.id === edge.target)
+  //             )
+  //           }
+  //         : board
+  //     )
+  //   });
+  //   // delete this node from the current board
+  //   setNodes(nodes => nodes.filter(n => n.id !== id));
+  // }, [id, settings, setSettings]);
 
-  const updateMessageWithTokenMetrics = async (streamedContent: string, startTime: number) => {
+  const { updateMetrics } = useMetricsStore.getState();
+  const currentMetrics = useMetricsStore.getState().metrics[model] || {
+    totalTokens: 0,
+    totalTime: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    tokensPerSecond: 0,
+  };
+
+  const updateMessageWithTokenMetrics = async (inputTok: number, streamedContent: string, startTime: number) => {
     const endTime = performance.now();
     const totalTime = (endTime - startTime) / 1000;
     const tokenCount = await countTokens(streamedContent);
@@ -153,6 +163,21 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
         }
         return message;
       });
+    });
+
+    // Count input tokens (including context)
+    const inputTokens = inputTok;
+    console.log("Input tokens:", inputTokens);
+    // Count output tokens
+    const outputTokens = await countTokens(streamedContent);
+    console.log("Output tokens:", outputTokens);
+
+    updateMetrics(model, {
+      inputTokens,
+      outputTokens,
+      totalTokens: inputTokens + outputTokens,
+      totalTime,
+      tokensPerSecond: outputTokens / totalTime
     });
   };
 
@@ -214,15 +239,23 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
 
   const getApiKeyForModel = (selectedModel: AIModel | CustomModel) => {
     if ('endpoint' in selectedModel) {
+      // For custom models (like Ollama), check if auth is required
+      if (!selectedModel.requiresAuth) {
+        return "";
+      }
       return (selectedModel as CustomModel).apiKey;
     }
     
-    return selectedModel.provider === "openai" ? settings.openai.apiKey :
-           selectedModel.provider === "xai" ? settings.xai.apiKey :
-           selectedModel.provider === "groq" ? settings.groq.apiKey :
-           selectedModel.provider === "openrouter" ? settings.openrouter.apiKey :
-           selectedModel.provider === "anthropic" ? settings.anthropic.apiKey :
-           selectedModel.provider === "google" ? settings.google.apiKey :
+    // For standard providers, check if API key exists
+    if (selectedModel.provider === "openai") {
+      return settings.openai?.apiKey || "";
+    }
+    
+    return selectedModel.provider === "xai" ? settings.xai?.apiKey || "" :
+           selectedModel.provider === "groq" ? settings.groq?.apiKey || "" :
+           selectedModel.provider === "openrouter" ? settings.openrouter?.apiKey || "" :
+           selectedModel.provider === "anthropic" ? settings.anthropic?.apiKey || "" :
+           selectedModel.provider === "google" ? settings.google?.apiKey || "" :
            "";
   };
 
@@ -316,7 +349,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
       console.log("Sending all messages to API:", allMessages);
   
       let response;
-      let result;
+      let result: any;
   
       if (selectedModel.provider === "anthropic") {
         const anthropic = new Anthropic({
@@ -356,15 +389,17 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
                 });
               });
             }, 500);
+
+            const messagesToSend = sanitizeChatMessages(allMessages.map(msg => ({
+              role: msg.role === "user" ? "user" : "assistant",
+              content: msg.content
+            })))
         
             // Use streamMessages.create() for streaming
             const stream = await anthropic.messages.stream({
               model: model,
               system: enhancedSystemPrompt,
-              messages: sanitizeChatMessages(allMessages.map(msg => ({
-                role: msg.role === "user" ? "user" : "assistant",
-                content: msg.content
-              }))),
+              messages: messagesToSend,
               max_tokens: 8192,
               ...filterAnthropicAISettings(settings),
             });
@@ -393,8 +428,10 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
             // Clean up loading animation
             clearInterval(loadingInterval);
 
+            const inputTokens = await countTokens(messagesToSend.map(m => m.content).join(" "));
+
             // Update final message with accurate token metrics
-            await updateMessageWithTokenMetrics(streamedContent, startTime);
+            await updateMessageWithTokenMetrics(inputTokens, streamedContent, startTime);
         
           } catch (error) {
             // Remove the empty assistant message on error
@@ -437,6 +474,17 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
           };
   
           setMessages((prev) => [...prev, assistantMessage]);
+          const newTotalTokens = currentMetrics.totalTokens + (metrics.total_tokens || 0);
+          const newTotalTime = currentMetrics.totalTime + totalTime;
+          const newTokensPerSecond = newTotalTokens / newTotalTime;
+
+          updateMetrics(model, {
+            inputTokens: (metrics?.prompt_tokens || 0) - (metrics?.completion_tokens || 0),
+            outputTokens: metrics?.completion_tokens || 0,
+            totalTokens: metrics?.total_tokens || 0,
+            totalTime,
+            tokensPerSecond: newTokensPerSecond
+          });
         }
         
       } else {
@@ -497,7 +545,13 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
                 model,
                 messages: messagesToSend,
                 stream: true,
-                ...filterAISettings(settings),
+                ...filterAISettings({
+                  temperature: settings.temperature,
+                  top_p: settings.top_p,
+                  max_tokens: settings.max_tokens,
+                  frequency_penalty: settings.frequency_penalty,
+                  presence_penalty: settings.presence_penalty
+                }),
               }),
             });
         
@@ -546,7 +600,8 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
             // Clean up loading animation
             clearInterval(loadingInterval);
 
-            await updateMessageWithTokenMetrics(streamedContent, startTime);
+            const inputTokens = await countTokens(messagesToSend.map(m => m.content).join(" "));
+            await updateMessageWithTokenMetrics(inputTokens, streamedContent, startTime);
       
         
           } catch (error) {
@@ -562,6 +617,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
             setIsLoading(false);
           }
         } else {
+          
           response = await fetch(`${baseUrl}/chat/completions`, {
             method: "POST",
             headers: {
@@ -571,7 +627,13 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
             body: JSON.stringify({
               model,              
               messages: messagesToSend,
-              ...filterAISettings(settings),
+              ...filterAISettings({
+                temperature: settings.temperature,
+                top_p: settings.top_p,
+                max_tokens: settings.max_tokens,
+                frequency_penalty: settings.frequency_penalty,
+                presence_penalty: settings.presence_penalty
+              }),
             }),
           });
       
@@ -607,6 +669,19 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
           };
       
           setMessages((prev) => [...prev, assistantMessage]);
+
+          const newTotalTokens = currentMetrics.totalTokens + (result.usage?.total_tokens || 0);
+          const newTotalTime = currentMetrics.totalTime + totalTime;
+          const newTokensPerSecond = newTotalTokens / newTotalTime;
+
+          updateMetrics(model, {
+            inputTokens: (metrics?.prompt_tokens || 0) - (metrics?.completion_tokens || 0),
+            outputTokens: metrics?.completion_tokens || 0,
+            totalTokens: metrics?.total_tokens || 0,
+            totalTime,
+            tokensPerSecond: newTokensPerSecond
+          });
+        
           setInput("");
           setImageData(null);
           setPreviewImage(null);

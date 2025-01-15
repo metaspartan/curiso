@@ -84,7 +84,7 @@
     "react-resizable-panels": "^2.1.4",
     "react-syntax-highlighter": "^15.6.1",
     "reactflow": "^11.11.4",
-    "recharts": "^2.13.0",
+    "recharts": "^2.15.0",
     "remark-gfm": "^4.0.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",

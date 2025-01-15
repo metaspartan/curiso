@@ -6,8 +6,9 @@ import { nanoid } from 'nanoid';
 import { themeColors } from './constants';
 import { defaultLocalModels } from './localmodels';
 import { VectorDB } from './db';
+import { useMetricsStore } from './metricstore';
 
-const STORE_VERSION = 3;
+const STORE_VERSION = 4;
 const MASTER_KEY = import.meta.env.VITE_MASTER_KEY ?? 'default-master-key';
 const FALLBACK_KEY = import.meta.env.VITE_FALLBACK_KEY ?? 'default-fallback-key';
 
@@ -161,6 +162,9 @@ export const useStore = create<StoreState>()(
       clearAllData: async () => {
         const storage = await getSecureStorage();
         storage.clear();
+
+        // Clear metrics store        
+        useMetricsStore.getState().resetMetrics();
         
         // Clear VectorDB IndexedDB
         const db = new VectorDB();

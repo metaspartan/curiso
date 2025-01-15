@@ -18,7 +18,7 @@ import { useStore } from "@/lib/store";
 import 'reactflow/dist/style.css';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, MessageCirclePlus } from 'lucide-react';
+import { Plus, Settings, MessageCirclePlus, Trash2 } from 'lucide-react';
 import { ChatNode } from '@/components/ChatNode';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { nanoid } from 'nanoid';
@@ -26,6 +26,7 @@ import { BoardSelector } from '@/components/BoardSelector';
 import logo from "@/assets/logo.svg"
 import { useDebouncedCallback } from 'use-debounce';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { MetricsDialog } from '@/components/MetricsDialog';
 
 const nodeTypes = {
   chat: ChatNode
@@ -267,6 +268,8 @@ function Flow({ settingsOpen, setSettingsOpen }: { settingsOpen: boolean; setSet
     });
   };
 
+  const selectedNodes = currentBoard.nodes.filter(node => node.selected);
+
   return (
     <ReactFlow
       nodes={currentBoard.nodes}
@@ -297,9 +300,17 @@ function Flow({ settingsOpen, setSettingsOpen }: { settingsOpen: boolean; setSet
         <Button onClick={addNode} size="icon">
           <MessageCirclePlus className="h-4 w-4" />
         </Button>
+        {selectedNodes.length > 0 && (
+          <Button onClick={delNode} size="icon" variant="outline">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
         <Button onClick={() => setSettingsOpen(true)} size="icon" variant="outline">
           <Settings className="h-4 w-4" />
         </Button>
+      </Panel>
+      <Panel position="bottom-right" className="space-x-2">
+        <MetricsDialog />
       </Panel>
     </ReactFlow>
   );
