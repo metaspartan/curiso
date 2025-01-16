@@ -27,6 +27,7 @@ import { useStore } from "@/lib/store";
 import { PRESET_ENDPOINTS } from "@/lib/constants";
 import logo from "@/assets/logo.svg";
 import { cn } from "@/lib/utils";
+import { generateChartColor } from "@/lib/colors";
 // Add these functions before the MetricsDialog component
 const getEndpointIcon = (modelId: string) => {
   if (modelId.includes('://')) {
@@ -70,8 +71,10 @@ const getEndpointIcon = (modelId: string) => {
           {payload.map((entry: any, index: number) => (
             <div key={index} className="flex items-center gap-2 text-xs">
               <div
-                className="h-2 w-2 shrink-0 rounded-sm"
-                style={{ backgroundColor: entry.color }}
+                className={`h-2 w-2 shrink-0 rounded-sm`}
+                style={{
+                  backgroundColor: `hsl(${generateChartColor(index)})`
+                }}
               />
               <span className="truncate" title={`${entry.value} (${formatNumber(entry.payload.value)})`}>
                 {entry.value} ({formatNumber(entry.payload.value)})
@@ -93,29 +96,37 @@ const getEndpointIcon = (modelId: string) => {
       Output: data.outputTokens,
     }));
   
-    const chartData = Object.entries(metrics).map(([modelId, data]) => ({
+    const chartData = Object.entries(metrics).map(([modelId, data], index) => {
+      const colorValue = generateChartColor(index)
+      return {
         model: modelId,
         tokens: data.totalTokens,
-        fill: `var(--color-${modelId.toLowerCase().replace(/[^a-z0-9]/g, "-")})`,
-      }));
+        fill: `hsl(${colorValue})`,
+        className: `chart-color-${index}`,
+        style: {
+          '--chart-color-h': colorValue.split(' ')[0]
+        } as React.CSSProperties
+      }
+    });
     
-    const chartConfig = Object.entries(metrics).reduce((acc, [modelId, _]) => {
-    const safeId = modelId.toLowerCase().replace(/[^a-z0-9]/g, "-");
-    acc[safeId] = {
+    const chartConfig = Object.entries(metrics).reduce((acc, [modelId, _], index) => {
+      const safeId = modelId.toLowerCase().replace(/[^a-z0-9]/g, "-");
+      const colorValue = generateChartColor(index);
+      acc[safeId] = {
         label: modelId,
-        color: `hsl(var(--chart-${Object.keys(acc).length + 1}))`,
-    };
-    return acc;
+        color: `hsl(${colorValue})`,
+      };
+      return acc;
     }, {} as ChartConfig);
 
     const ioChartConfig = {
     Input: {
         label: "Input Toks",
-        color: "hsl(var(--chart-1))",
+        color: "hsl(var(--c-1))",
     },
     Output: {
         label: "Output Toks",
-        color: "hsl(var(--chart-3))",
+        color: "hsl(var(--c-3))",
     },
     } satisfies ChartConfig;
 
@@ -157,7 +168,7 @@ const getEndpointIcon = (modelId: string) => {
               </Button> */}
             </DialogTitle>
             <DialogDescription>
-              Detailed analysis of your token usage across different models
+              Detailed analysis of your token usage across different LLM models
             </DialogDescription>
           </DialogHeader>
   
@@ -202,7 +213,15 @@ const getEndpointIcon = (modelId: string) => {
                         nameKey="model"
                         innerRadius={60}
                         paddingAngle={2}
-                      />
+                      >
+                        {chartData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`}
+                          className={entry.className}
+                          fill={`hsl(${generateChartColor(index)})`}
+                        />
+                      ))}
+                    </Pie>
                     </PieChart>
                   </ChartContainer>
                   <div className="mt-4">
@@ -322,7 +341,7 @@ const getEndpointIcon = (modelId: string) => {
                             <p className="font-medium">{formatNumber(data.totalTokens)}</p>
                         </div>
                         <div>
-                            <p className="text-xs text-muted-foreground">Total Time</p>
+                            <p className="text-xs text-muted-foreground">Total Inference Time</p>
                             <p className="font-medium">{data.totalTime.toFixed(1)}s</p>
                         </div>
                         </div>

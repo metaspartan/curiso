@@ -80,7 +80,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           
             <div className="flex justify-center">
             <img src={logo} alt="Curiso.ai" title="Curiso.ai" className="w-12 h-12" /></div>
-            <div className="flex justify-center"><p className="text-sm text-muted-foreground justify-center mb-2">Version v1.1.6 by <a 
+            <div className="flex justify-center"><p className="text-sm text-muted-foreground justify-center mb-2">Version v1.1.8 by <a 
               href="https://github.com/metaspartan/curiso" 
               onClick={(e) => {
                 e.preventDefault();
