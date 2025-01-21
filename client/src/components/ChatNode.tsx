@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AIModel, APIResponseMetrics, CustomModel, Message, availableModels } from "@/lib/types";
+import { AIModel, APIResponseMetrics, CustomModel, Message} from "@/lib/types";
+import { availableModels } from "@/lib/remotemodels";
 import { cn, isEqual, sanitizeChatMessages } from "@/lib/utils";
 import { useStore } from "@/lib/store";
 import { Copy, Check } from "lucide-react";
@@ -34,6 +35,8 @@ import { CodeBlock } from "./CodeBlock";
 import remarkGfm from 'remark-gfm';
 import { countTokens } from "@/lib/toksec";
 import { useMetricsStore } from "@/lib/metricstore";
+import { processThinkingContent } from "@/lib/utils";
+import { ThinkingBlock } from "./ThinkingBlock";
 
 export function ChatNode({ id, data: initialData }: NodeProps) {
   const [input, setInput] = useState("");
@@ -848,6 +851,58 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
                   className="max-w-sm rounded-md"
                 />
               )}
+              {msg.content && (() => {
+  const { blocks, processedContent } = processThinkingContent(msg.content);
+  return (
+    <>
+      {blocks.map((block) => 
+        block.type === 'thinking' ? (
+          <ThinkingBlock key={block.key}>
+            <ReactMarkdown 
+            components={{
+              code: CodeBlock as any,
+              pre: ({ children }) => <pre className="p-0 m-0" onClick={e => e.stopPropagation()}>{children}</pre>,
+              h1: ({ children }) => <h1 className="text-2xl font-bold mb-2">{children}</h1>,
+              h2: ({ children }) => <h2 className="text-xl font-bold mb-2">{children}</h2>,
+              h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
+              h4: ({ children }) => <h4 className="text-base font-bold mb-2">{children}</h4>,
+              p: ({ children }) => <p className="mt-1 mb-2">{children}</p>,
+              ul: ({ children }) => <ul className="list-disc list-inside mb-4">{children}</ul>,
+              ol: ({ children }) => <ol className="list-decimal list-inside mb-4">{children}</ol>,
+              li: ({ children }) => <li className="mb-2">{children}</li>,
+              a: ({ href, children }) => (
+                <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                  {children}
+                </a>
+              ),
+              blockquote: ({ children }) => (
+                <blockquote className="border-l-4 border-primary pl-4 italic mb-4">
+                  {children}
+                </blockquote>
+              ),
+              img: ({ src, alt }) => (
+                <img src={src} alt={alt} className="max-w-full h-auto rounded-lg mb-4" />
+              ),
+              table: ({ children }) => (
+                <div className="overflow-x-auto mb-4">
+                  <table className="min-w-full divide-y divide-border">
+                    {children}
+                  </table>
+                </div>
+              ),
+              th: ({ children }) => (
+                <th className="px-4 py-2 bg-muted font-medium">{children}</th>
+              ),
+              td: ({ children }) => (
+                <td className="px-4 py-2 border-t">{children}</td>
+              ),
+            }}
+            remarkPlugins={[remarkGfm]}>
+              {block.content}
+            </ReactMarkdown>
+          </ThinkingBlock>
+        ) : null
+      )}
 <ReactMarkdown
   components={{
     code: CodeBlock as any,
@@ -889,8 +944,11 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
   }}
   remarkPlugins={[remarkGfm]}
 >
-  {msg.content}
-</ReactMarkdown>
+  {processedContent}
+  </ReactMarkdown>
+    </>
+  );
+})()}
               {msg.role === "assistant" && msg.metrics && (
                 <div className="text-xs text-gray-500 mt-1">
                   {msg.metrics.totalTokens && `${msg.metrics.totalTokens} tokens`}
