@@ -37,6 +37,9 @@ import { countTokens } from "@/lib/toksec";
 import { useMetricsStore } from "@/lib/metricstore";
 import { processThinkingContent } from "@/lib/utils";
 import { ThinkingBlock } from "./ThinkingBlock";
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import KaTeX from 'katex';
 
 export function ChatNode({ id, data: initialData }: NodeProps) {
   const [input, setInput] = useState("");
@@ -869,7 +872,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
               p: ({ children }) => <p className="mt-1 mb-2">{children}</p>,
               ul: ({ children }) => <ul className="list-disc list-inside mb-4">{children}</ul>,
               ol: ({ children }) => <ol className="list-decimal list-inside mb-4">{children}</ol>,
-              li: ({ children }) => <li className="mb-2">{children}</li>,
+              li: ({ children }) => <li className="">{children}</li>,
               a: ({ href, children }) => (
                 <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
                   {children}
@@ -896,8 +899,19 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
               td: ({ children }) => (
                 <td className="px-4 py-2 border-t">{children}</td>
               ),
+              math: ({ value }: { value: string }) => (
+                <div className="katex-display">
+                  <span dangerouslySetInnerHTML={{ __html: KaTeX.renderToString(value, { displayMode: true }) }} />
+                </div>
+              ),
+              inlineMath: ({ value }: { value: string }) => (
+                <span className="math-inline">
+                  <span dangerouslySetInnerHTML={{ __html: KaTeX.renderToString(value, { displayMode: false }) }} />
+                </span>
+              ),
             }}
-            remarkPlugins={[remarkGfm]}>
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}>
               {block.content}
             </ReactMarkdown>
           </ThinkingBlock>
@@ -914,7 +928,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     p: ({ children }) => <p className="mt-1 mb-2">{children}</p>,
     ul: ({ children }) => <ul className="list-disc list-inside mb-4">{children}</ul>,
     ol: ({ children }) => <ol className="list-decimal list-inside mb-4">{children}</ol>,
-    li: ({ children }) => <li className="mb-2">{children}</li>,
+    li: ({ children }) => <li className="">{children}</li>,
     a: ({ href, children }) => (
       <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
         {children}
@@ -942,7 +956,8 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
       <td className="px-4 py-2 border-t">{children}</td>
     ),
   }}
-  remarkPlugins={[remarkGfm]}
+  remarkPlugins={[remarkGfm, remarkMath]}
+  rehypePlugins={[rehypeKatex]}
 >
   {processedContent}
   </ReactMarkdown>

@@ -46,13 +46,11 @@ Curiso AI is an infinite canvas for your thoughts—a platform that seamlessly c
 
 ![screenshot3](custommodels.png)
 
-## Donate
+## Solana Token
 
-If you find Curiso.ai useful, please consider donating to support its development.
+Curiso ($CUR) is a token on the Solana blockchain that will provide exclusive access to the future Curiso.ai web application. Token holders will be able to unlock premium features and enhanced AI capabilities with $CUR. (Coming Soon)
 
-Bitcoin (BTC) Address: bc1qgamupnnd2v0uj8a5cffyn8d25atahwq3wexue8
-
-Solana (SOL) Address: FLXQhZgyNGgNzE7MEniiHkrh3bs8kfHjd4J1L7KgBWso
+[$CUR on Dexscreener](https://dexscreener.com/solana/8TbsZ3yH1mBHytVpmMn4qED2UeF3FgWUVt1pd5RBpump)
 
 ## Getting Started
 
@@ -113,6 +111,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Author
 
 Carsen Klock - [@metaspartan](https://github.com/metaspartan) [@carsenklock](https://x.com/carsenklock)
+
+## Socials
+
+- [X](https://x.com/curisoai)
+- [Telegram](https://t.me/curisoai)
 
 ## Acknowledgments
 

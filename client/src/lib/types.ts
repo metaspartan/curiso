@@ -1,6 +1,7 @@
 import { Edge } from "reactflow";
 import { Node as ReactFlowNode } from 'reactflow';
 
+export const providers = ['openai', 'xai', 'groq', 'openrouter', 'anthropic', 'google', 'ollama', 'custom'];
 export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -69,7 +70,7 @@ export interface Board {
 export interface AIModel {
   id: string;
   name: string;
-  provider: 'openai' | 'xai' | 'groq' | 'openrouter' | 'anthropic' | 'google' | 'ollama' | 'custom';
+  provider: (typeof providers)[number];
   description: string;
   maxTokens: number;
   thumbnailUrl: string;
@@ -119,7 +120,7 @@ export interface GlobalSettings {
 export interface NodeData {
   messages: Message[];
   model: string;
-  provider: 'openai' | 'xai' | 'groq' | 'openrouter' | 'anthropic' | 'google' | 'ollama' | 'custom';
+  provider: (typeof providers)[number];
   selectedDocuments?: string[]; // Array of document IDs selected for this node
   selectedWebsites?: string[]; // Array of website IDs selected for this node
 }
