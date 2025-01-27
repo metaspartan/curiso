@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite dev",
+    "tauri": "tauri",
     "build": "vite build",
     "check": "tsc",
     "desktop": "tauri dev",
