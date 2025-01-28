@@ -1,7 +1,7 @@
 import { Edge } from "reactflow";
 import { Node as ReactFlowNode } from 'reactflow';
 
-export const providers = ['openai', 'xai', 'groq', 'openrouter', 'anthropic', 'google', 'ollama', 'custom'];
+export const providers = ['openai', 'deepseek', 'xai', 'groq', 'openrouter', 'anthropic', 'google', 'perplexity','ollama', 'custom'];
 export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -96,6 +96,8 @@ export interface GlobalSettings {
   customModels: CustomModel[];
   currentBoardId: string;
   openai: ProviderSettings;
+  deepseek: ProviderSettings;
+  perplexity: ProviderSettings;
   xai: ProviderSettings;
   groq: ProviderSettings;
   anthropic: ProviderSettings;

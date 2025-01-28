@@ -8,7 +8,7 @@ import { defaultLocalModels } from './localmodels';
 import { VectorDB } from './db';
 import { useMetricsStore } from './metricstore';
 
-const STORE_VERSION = 4;
+const STORE_VERSION = 6;
 const MASTER_KEY = import.meta.env.VITE_MASTER_KEY ?? 'default-master-key';
 const FALLBACK_KEY = import.meta.env.VITE_FALLBACK_KEY ?? 'default-fallback-key';
 
@@ -60,6 +60,8 @@ const defaultSettings: GlobalSettings = {
   boards: [defaultBoard],
   currentBoardId: defaultBoard.id,
   openai: { apiKey: '' },
+  deepseek: { apiKey: '' },
+  perplexity: { apiKey: '' },
   xai: { apiKey: '' },
   groq: { apiKey: '' },
   openrouter: { apiKey: '' },
@@ -113,6 +115,16 @@ const migrations = {
       ...defaultSettings.hotkeys,
       ...state.hotkeys
     }
+  }),
+  3: (state: any) => ({
+    ...state,
+    version: 5,
+    deepseek: { apiKey: '' }
+  }),
+  4: (state: any) => ({
+    ...state,
+    version: 6,
+    perplexity: { apiKey: '' }
   })
 };
 
@@ -162,6 +174,8 @@ export const useStore = create<StoreState>()(
       clearAllData: async () => {
         const storage = await getSecureStorage();
         storage.clear();
+
+        localStorage.removeItem('hasSeenWelcome');
 
         // Clear metrics store        
         useMetricsStore.getState().resetMetrics();

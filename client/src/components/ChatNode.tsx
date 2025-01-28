@@ -193,6 +193,8 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     }
     
     return selectedModel.provider === "openai" ? "https://api.openai.com/v1" :
+           selectedModel.provider === "deepseek" ? "https://api.deepseek.com/v1" :
+           selectedModel.provider === "perplexity" ? "https://api.perplexity.ai" :
            selectedModel.provider === "xai" ? "https://api.x.ai/v1" :
            selectedModel.provider === "groq" ? "https://api.groq.com/openai/v1" :
            selectedModel.provider === "openrouter" ? "https://openrouter.ai/api/v1" :
@@ -243,6 +245,25 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     return filteredSettings;
   }
 
+  function filterPerplexityAISettings(settings: Partial<AISettings>) {
+    const filteredSettings: Record<string, any> = {};
+  
+    if (settings.temperature !== DEFAULT_AI_SETTINGS.temperature) {
+      filteredSettings.temperature = settings.temperature;
+    }
+  
+    if (settings.top_p !== DEFAULT_AI_SETTINGS.top_p) {
+      filteredSettings.top_p = settings.top_p;
+    }
+  
+    if (settings.frequency_penalty !== DEFAULT_AI_SETTINGS.frequency_penalty) {
+      filteredSettings.frequency_penalty = settings.frequency_penalty || 0.1;
+    }
+
+  
+    return filteredSettings;
+  }
+
   const getApiKeyForModel = (selectedModel: AIModel | CustomModel) => {
     if ('endpoint' in selectedModel) {
       // For custom models (like Ollama), check if auth is required
@@ -258,6 +279,8 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
     }
     
     return selectedModel.provider === "xai" ? settings.xai?.apiKey || "" :
+           selectedModel.provider === "perplexity" ? settings.perplexity?.apiKey || "" :
+           selectedModel.provider === "deepseek" ? settings.deepseek?.apiKey || "" :
            selectedModel.provider === "groq" ? settings.groq?.apiKey || "" :
            selectedModel.provider === "openrouter" ? settings.openrouter?.apiKey || "" :
            selectedModel.provider === "anthropic" ? settings.anthropic?.apiKey || "" :
@@ -356,7 +379,7 @@ export function ChatNode({ id, data: initialData }: NodeProps) {
   
       let response;
       let result: any;
-  
+
       if (selectedModel.provider === "anthropic") {
         const anthropic = new Anthropic({
           apiKey: apiKey,

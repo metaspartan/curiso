@@ -24,7 +24,13 @@ import logo from "@/assets/logo.svg";
 import { ClearDataDialog } from "./ClearDataDialog";
 import { RAGManager } from "./RAGManager";
 import { open as tauriOpen } from '@tauri-apps/plugin-shell';
-
+import openaiLogo from '@/assets/openai-logo.svg';
+import googleLogo from '@/assets/google-logo.svg';
+import deepseekLogo from '@/assets/deepseek-logo.svg';
+import anthropicLogo from '@/assets/anthropic-logo.svg';
+import groqLogo from '@/assets/groq-logo.svg';
+import openrouterLogo from '@/assets/openrouter-logo.svg';
+import xaiLogo from '@/assets/xai-logo.svg';
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -80,7 +86,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           
             <div className="flex justify-center">
             <img src={logo} alt="Curiso.ai" title="Curiso.ai" className="w-12 h-12" /></div>
-            <div className="flex justify-center"><p className="text-sm text-muted-foreground justify-center mb-2">Version v1.2.0 by <a 
+            <div className="flex justify-center"><p className="text-sm text-muted-foreground justify-center mb-2">Version v1.2.1 by <a 
               href="https://github.com/metaspartan/curiso" 
               onClick={(e) => {
                 e.preventDefault();
@@ -208,99 +214,170 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </TabsContent>
 
           <TabsContent value="api" className="space-y-4">
-          <Card className="p-4">
-            <div className="grid gap-4">
+          <div className="max-h-[400px] overflow-y-auto pr-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <img src={openaiLogo} alt="OpenAI" className="w-6 h-6" />
+                    <Label>OpenAI API Key</Label>
+                  </div>
+                  <Input
+                    type="password"
+                    value={settings.openai.apiKey}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        openai: { ...settings.openai, apiKey: e.target.value }
+                      })
+                    }
+                    placeholder="sk-..."
+                  />
+                </div>
+              </Card>
 
-                <Label htmlFor="openaiKey">OpenAI API Key</Label>
-                <Input
-                  id="openaiKey"
-                  type="password"
-                  value={settings.openai.apiKey}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      openai: { ...settings.openai, apiKey: e.target.value }
-                    })
-                  }
-                />
-           
+              <Card className="p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <img src={anthropicLogo} alt="Anthropic" className="w-6 h-6" />
+                    <Label>Anthropic API Key</Label>
+                  </div>
+                  <Input
+                    type="password"
+                    value={settings.anthropic.apiKey}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        anthropic: { ...settings.anthropic, apiKey: e.target.value }
+                      })
+                    }
+                    placeholder="sk-ant-..."
+                  />
+                </div>
+              </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="anthropicKey">Anthropic API Key</Label>
-                <Input
-                  id="anthropicKey"
-                  type="password"
-                  value={settings.anthropic.apiKey}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      anthropic: { ...settings.anthropic, apiKey: e.target.value }
-                    })
-                  }
-                />
-              </div>
+              <Card className="p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <img src={xaiLogo} alt="xAI" className="w-6 h-6" />
+                    <Label>xAI API Key</Label>
+                  </div>
+                  <Input
+                    type="password"
+                    value={settings.xai.apiKey}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        xai: { ...settings.xai, apiKey: e.target.value }
+                      })
+                    }
+                    placeholder="xai-..."
+                  />
+                </div>
+              </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="googleKey">Google API Key</Label>
-                <Input
-                  id="googleKey"
-                  type="password"
-                  value={settings.google.apiKey}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      google: { ...settings.google, apiKey: e.target.value }
-                    })
-                  }
-                />
-              </div>
+              <Card className="p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <img src={googleLogo} alt="Google" className="w-6 h-6" />
+                    <Label>Google API Key</Label>
+                  </div>
+                  <Input
+                    type="password"
+                    value={settings.google.apiKey}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        google: { ...settings.google, apiKey: e.target.value }
+                      })
+                    }
+                    placeholder="AIza..."
+                  />
+                </div>
+              </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="xaiKey">xAI API Key</Label>
-                <Input
-                  id="xaiKey"
-                  type="password"
-                  value={settings.xai.apiKey}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      xai: { ...settings.xai, apiKey: e.target.value }
-                    })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="groqKey">Groq API Key</Label>
-                <Input
-                  id="groqKey"
-                  type="password"
-                  value={settings.groq.apiKey}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      groq: { ...settings.groq, apiKey: e.target.value }
-                    })
-                  }
-                />
-              </div>
+              <Card className="p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <img src={groqLogo} alt="Groq" className="w-6 h-6" />
+                    <Label>Groq API Key</Label>
+                  </div>
+                  <Input
+                    type="password"
+                    value={settings.groq.apiKey}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        groq: { ...settings.groq, apiKey: e.target.value }
+                      })
+                    }
+                    placeholder="gsk-..."
+                  />
+                </div>
+              </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="openrouterKey">OpenRouter API Key</Label>
-                <Input
-                  id="openrouterKey"
-                  type="password"
-                  value={settings.openrouter.apiKey}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      openrouter: { ...settings.openrouter, apiKey: e.target.value }
-                    })
-                  }
-                />
-              </div>
+              <Card className="p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <img src={openrouterLogo} alt="OpenRouter" className="w-6 h-6" />
+                    <Label>OpenRouter API Key</Label>
+                  </div>
+                  <Input
+                    type="password"
+                    value={settings.openrouter.apiKey}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        openrouter: { ...settings.openrouter, apiKey: e.target.value }
+                      })
+                    }
+                    placeholder="sk-or-..."
+                  />
+                </div>
+              </Card>
+
+              <Card className="p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <img src={deepseekLogo} alt="Deepseek" className="w-6 h-6" />
+                    <Label>Deepseek API Key</Label>
+                  </div>
+                  <Input
+                    type="password"
+                    value={settings.deepseek.apiKey}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        deepseek: { ...settings.deepseek, apiKey: e.target.value }
+                      })
+                    }
+                    placeholder="sk-..."
+                  />
+                </div>
+              </Card>
+
+              {/* <Card className="p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <img src={perplexityLogo} alt="Perplexity" className="w-6 h-6" />
+                    <Label>Perplexity API Key</Label>
+                  </div>
+                  <Input
+                    type="password"
+                    value={settings.perplexity.apiKey}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        perplexity: { ...settings.perplexity, apiKey: e.target.value }
+                      })
+                    }
+                    placeholder="pplx-..."
+                  />
+                </div>
+              </Card> */}
             </div>
-          </Card>
-          </TabsContent>
+          </div>
+        </TabsContent>
 
           <TabsContent value="custom-models" className="space-y-4">
             <div className="space-y-4 mt-5">

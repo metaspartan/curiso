@@ -27,6 +27,7 @@ import logo from "@/assets/logo.svg"
 import { useDebouncedCallback } from 'use-debounce';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { MetricsDialog } from '@/components/MetricsDialog';
+import { WelcomeDialog } from '@/components/WelcomeDialog';
 
 const nodeTypes = {
   chat: ChatNode
@@ -38,6 +39,16 @@ function Flow({ settingsOpen, setSettingsOpen }: { settingsOpen: boolean; setSet
   const debouncedSetSettings = useDebouncedCallback((newSettings) => {
     setSettings(newSettings);
   }, 1000); // 1 second delay
+
+  const [showWelcome, setShowWelcome] = useState(true);
+  const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+
+  useEffect(() => {
+    if (!hasSeenWelcome) {
+      setShowWelcome(true);
+      localStorage.setItem('hasSeenWelcome', 'true');
+    }
+  }, []);
 
   const currentBoard = settings.boards.find(b => b.id === settings.currentBoardId)!;
   
@@ -270,7 +281,7 @@ function Flow({ settingsOpen, setSettingsOpen }: { settingsOpen: boolean; setSet
 
   const selectedNodes = currentBoard.nodes.filter(node => node.selected);
 
-  return (
+  return (<>
     <ReactFlow
       nodes={currentBoard.nodes}
       edges={currentBoard.edges}
@@ -313,6 +324,11 @@ function Flow({ settingsOpen, setSettingsOpen }: { settingsOpen: boolean; setSet
         <MetricsDialog />
       </Panel>
     </ReactFlow>
+    <WelcomeDialog 
+        open={showWelcome} 
+        onOpenChange={setShowWelcome}
+      />
+      </>
   );
 }
 
