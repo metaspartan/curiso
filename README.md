@@ -115,7 +115,8 @@ Carsen Klock - [@metaspartan](https://github.com/metaspartan) [@carsenklock](htt
 ## Socials
 
 - [X](https://x.com/curisoai)
-- [Telegram](https://t.me/curisoai)
+- [Telegram](https://t.me/curiso_official)
+- [Discord](https://discord.gg/xvS9ymZuH4)
 
 ## Acknowledgments
 
