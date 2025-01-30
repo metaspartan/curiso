@@ -155,6 +155,21 @@ Contributions are welcome! Please feel free to submit a pull request. If you hav
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Legal Disclaimer
+
+The CUR token ("CUR") is an experimental cryptocurrency token on the Solana blockchain intended for future utility within the Curiso AI platform.
+
+IMPORTANT NOTICE: Trading, holding, or engaging with cryptocurrency tokens carries inherent risks. By interacting with the CUR token, users acknowledge and agree that:
+
+1. No guarantees or warranties are made regarding current or future token utility, value, or platform integration
+2. All cryptocurrency transactions involve substantial risk of loss
+3. Neither Curiso AI nor its developers or contributors shall be held liable for any damages or losses arising from token-related activities
+4. No information provided constitutes financial, legal, or investment advice
+5. Future utility features and platform integration are subject to change without notice
+6. Users are solely responsible for conducting due diligence and complying with applicable laws and regulations
+
+THIS SOFTWARE AND ASSOCIATED TOKEN ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE TOKEN OR ITS USE.
+
 ## Author
 
 Carsen Klock - [@metaspartan](https://github.com/metaspartan) [@carsenklock](https://x.com/carsenklock)
