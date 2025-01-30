@@ -1,3 +1,4 @@
+@import 'katex/dist/katex.min.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -71,4 +72,89 @@
 
 .react-markdown .group button {
   pointer-events: auto !important;
+}
+
+:root {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --thinking-content: 240 5% 44.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+  --color-Input: hsl(var(--c-1));
+  --color-Output: hsl(var(--c-3));
+  --c-1: 220 70% 50%;
+  --c-3: 30 80% 55%;
+  --chart-color-base: 220 65% 55%;
+}
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --thinking-content: 240 5% 44.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+  --color-Input: hsl(var(--c-1));
+  --color-Output: hsl(var(--c-3));
+  --c-1: 220 70% 50%;
+  --c-3: 30 80% 55%;
+  --chart-color-base: 220 65% 55%;
+}
+
+.chart-dot {
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 9999px;
+  background-color: var(--dot-color);
+}
+
+/* Generate dynamic chart colors */
+@property --chart-color-h {
+  syntax: '<number>';
+  initial-value: 0;
+  inherits: false;
+}
+
+.chart-color {
+  --chart-color-h: 0;
+  --chart-color-s: 65%;
+  --chart-color-l: 55%;
+  color: hsl(var(--chart-color-h) var(--chart-color-s) var(--chart-color-l));
+}
+
+.thinking-content {
+  color: hsl(var(--thinking-content));
+  font-style: italic;
+  /* padding: 0.5rem;
+  margin: 0.5rem 0; */
+  border-top: 2px solid hsl(var(--muted));
+  border-bottom: 2px solid hsl(var(--muted));
 }

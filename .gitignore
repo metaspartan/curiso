@@ -10,3 +10,4 @@ pnpm-lock.yaml
 pnpm-workspace.yaml
 src-tauri/target
 .env
+.eslintcache

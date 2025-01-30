@@ -10,7 +10,7 @@ export class Encryption {
   private static readonly config: EncryptionConfig = {
     iterations: 10000,
     keySize: 256 / 32,
-    saltSize: 128 / 8
+    saltSize: 128 / 8,
   };
 
   private static generateSalt(): string {
@@ -20,7 +20,7 @@ export class Encryption {
   private static deriveKey(password: string, salt: string): lib.WordArray {
     return PBKDF2(password, salt, {
       keySize: this.config.keySize,
-      iterations: this.config.iterations
+      iterations: this.config.iterations,
     });
   }
 

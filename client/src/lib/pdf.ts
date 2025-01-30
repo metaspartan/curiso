@@ -3,12 +3,13 @@ import * as pdfjs from 'pdfjs-dist';
 
 export class PDFProcessor {
   constructor() {
-    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+    pdfjs.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
   }
 
   async extractText(file: File): Promise<string> {
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjs.getDocument({ 
+    const pdf = await pdfjs.getDocument({
       data: arrayBuffer,
       useSystemFonts: true,
       standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/standard_fonts/',
@@ -18,7 +19,7 @@ export class PDFProcessor {
     }).promise;
 
     let fullText = '';
-    
+
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent({});
@@ -42,16 +43,16 @@ export class PDFProcessor {
     }
 
     console.log('Full Extracted Text:', fullText);
-    
+
     return fullText.trim();
   }
-  
+
   private cleanText(text: string): string {
     return text
       .replace(/([a-z])-\n([a-z])/g, '$1$2') // Fix hyphenation
-      .replace(/\f/g, '\n')                   // Replace form feeds
-      .replace(/[^\S\r\n]+/g, ' ')           // Normalize whitespace
-      .replace(/\n{3,}/g, '\n\n')            // Normalize paragraph breaks
+      .replace(/\f/g, '\n') // Replace form feeds
+      .replace(/[^\S\r\n]+/g, ' ') // Normalize whitespace
+      .replace(/\n{3,}/g, '\n\n') // Normalize paragraph breaks
       .trim();
   }
 }
