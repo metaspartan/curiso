@@ -9,13 +9,17 @@ Curiso AI is an infinite canvas for your thoughts—a platform that seamlessly c
 
 - **Multi OS**: Windows, macOS, and Linux app
 - **Infinite Canvas**: Create and organize your thoughts visually on an unlimited workspace
-- **Multiple AI Provider Integration**:
+- **Multiple Default AI Provider Integration**:
+  - W.ai
+  - Inference.net
+  - Deepseek
   - OpenAI
   - Anthropic
   - Google
   - xAI
   - Groq
   - OpenRouter
+  - Alibaba Cloud
 
 - **Local AI Inference Provider Integration**:
   - Ollama
@@ -46,12 +50,6 @@ Curiso AI is an infinite canvas for your thoughts—a platform that seamlessly c
 
 ![screenshot3](custommodels.png)
 
-## Solana Token
-
-Curiso ($CUR) is a token on the Solana blockchain that will provide exclusive access to the future Curiso.ai web application. Token holders will be able to unlock premium features and enhanced AI capabilities with $CUR. (Coming Soon)
-
-[$CUR on Dexscreener](https://dexscreener.com/solana/8TbsZ3yH1mBHytVpmMn4qED2UeF3FgWUVt1pd5RBpump)
-
 ## Getting Started
 
 ### Download and Install latest release
@@ -63,33 +61,41 @@ Available for Windows, macOS, and Linux.
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) runtime installed on your system
-- API keys for the AI services you plan to use or Ollama installed locally
+- [Bun](https://bun.sh/) runtime installed on your system > v1.2.0
+- [Rust](https://www.rust-lang.org/) installed on your system > v1.86.0
+- [Tauri CLI](https://tauri.app/start/) installed on your system
+- API keys for the AI services you plan to use or Ollama/Exo/Jan.ai/LM Studio/vLLM/etc. installed locally or remotely
 
 ### Installation
 
-1. Clone the repository:
+1. Install Tauri CLI:
+
+```bash
+cargo install tauri-cli
+```
+
+2. Clone the repository:
 
 ```bash
 git clone https://github.com/metaspartan/curiso.git
 ```
 
-2. Navigate to the project directory:
+3. Navigate to the project directory:
 
 ```bash
 cd curiso
 ```
 
-3. Install dependencies:
+4. Install dependencies:
 
 ```bash
 bun install
 ```
 
-4. Run the development build:
+5. Run the development build:
 
 ```bash
-bun run desktop
+sudo bun run desktop
 ```
 
 ## Known Issues
@@ -99,6 +105,47 @@ bun run desktop
 ```bash
 set OLLAMA_ORIGINS=*
 ```
+
+## Solana Token
+
+Curiso ($CUR) is a utility token on the Solana blockchain.
+
+[$CUR on Dexscreener](https://dexscreener.com/solana/8TbsZ3yH1mBHytVpmMn4qED2UeF3FgWUVt1pd5RBpump)
+
+[$CUR on Solana](https://solscan.io/token/8TbsZ3yH1mBHytVpmMn4qED2UeF3FgWUVt1pd5RBpump)
+
+[$CUR on Coingecko](https://www.coingecko.com/en/coins/curiso)
+
+### Tokenomics
+
+- **CA**: 8TbsZ3yH1mBHytVpmMn4qED2UeF3FgWUVt1pd5RBpump
+- **CUR Total Supply**: 1,000,000,000 CUR
+- **Dev Fund**: ~14,868,655 CUR, 10,000,000 locked until April 2025 with 3 month cliff of ~3,333,333 CUR per month for 3 months.
+- **Blockchain**: Solana
+- **Name**: Curiso
+- **Ticker**: CUR
+
+### Token & Curiso Roadmap
+Q1-Q3 2025 Goals:
+
+- CUR will be integrated as the main payment method for tiered premium subscriptions, making it a utility token on Solana.
+- By integrating with the Pyth network, we'll ensure stable USD pricing for your subscriptions, bringing you a consistent and reliable experience.
+- A portion of CUR used in subscription payments will be burned, supporting the token's long-term value and collectability.
+- Introduce a staking pool program where CUR holders can earn rewards, funded by a portion of Curiso subscription purchases, to support token holders.
+
+#### Subscription Payments
+What’s Coming: CUR will be integrated as the main payment method for premium subscriptions, making it a utility token on Solana.
+
+#### Stable Sub CUR Pricing with Pyth
+What’s Coming: By integrating with the Pyth network, we'll ensure stable USD pricing for your subscriptions, bringing you a consistent and reliable experience.
+
+#### Token Burn Mechanism
+What’s Coming: A portion of CUR used in subscription payments will be burned, supporting the token's long-term value and collectability.
+
+#### CUR Lock Staking Pools
+Possibility: Introduce a staking pool program where CUR holders can earn rewards, funded by a portion of Curiso subscription purchases, to support token holders.
+
+Stay tuned as we progress through these phases, bringing enhanced value and utility to your CUR experience. Thank you for your support and feedback as we continue to evolve!
 
 ## Contributing
 
@@ -135,3 +182,7 @@ Carsen Klock - [@metaspartan](https://github.com/metaspartan) [@carsenklock](htt
 - [Jan.ai](https://jan.ai/)
 - [LM Studio](https://lmstudio.ai/)
 - [Exo](https://github.com/exo-explore/exo)
+- [Alibaba Cloud](https://www.alibabacloud.com/)
+- [DeepSeek](https://www.deepseek.com/)
+- [W.ai](https://www.w.ai/)
+- [Inference.net](https://inference.net/)

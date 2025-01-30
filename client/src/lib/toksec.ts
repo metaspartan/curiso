@@ -1,4 +1,4 @@
-import { Tiktoken, encodingForModel, TiktokenModel } from "js-tiktoken";
+import { Tiktoken, encodingForModel, TiktokenModel } from 'js-tiktoken';
 
 let tokenizer: Tiktoken | null = null;
 

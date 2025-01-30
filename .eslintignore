@@ -1,0 +1,16 @@
+node_modules
+dist
+build
+public
+.vscode
+.gitignore
+.eslintignore
+.prettierrc
+.prettierignore
+src-tauri/
+src-tauri/target/
+**/*.js.map
+**/*.d.ts
+vite.config.ts
+tailwind.config.ts
+postcss.config.js

@@ -1,7 +1,7 @@
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { useStore } from "@/lib/store";
-import { useState } from "react";
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { useStore } from '@/lib/store';
+import { useState } from 'react';
 
 export function HotkeySettings() {
   const { settings, setSettings } = useStore();
@@ -15,7 +15,7 @@ export function HotkeySettings() {
       if (e.metaKey) modifiers.push('meta');
       if (e.altKey) modifiers.push('alt');
       if (e.shiftKey) modifiers.push('shift');
-      
+
       const key = e.key.toLowerCase();
       const hotkey = [...modifiers, key].join('+');
 
@@ -23,8 +23,8 @@ export function HotkeySettings() {
         ...settings,
         hotkeys: {
           ...settings.hotkeys,
-          [hotkeyName]: hotkey
-        }
+          [hotkeyName]: hotkey,
+        },
       });
       setRecording(null);
     }
@@ -39,7 +39,7 @@ export function HotkeySettings() {
           <div className="flex gap-2">
             <Input
               value={recording === name ? 'Press keys...' : value}
-              onKeyDown={(e) => handleKeyDown(e, name)}
+              onKeyDown={e => handleKeyDown(e, name)}
               onFocus={() => setRecording(name)}
               onBlur={() => setRecording(null)}
               className="w-32 text-center"

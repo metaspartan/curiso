@@ -1,7 +1,7 @@
 import { Encryption } from './encryption';
 
 export const STORAGE_KEYS = ['settings', 'auth', 'boards'] as const;
-export type StorageKey = typeof STORAGE_KEYS[number];
+export type StorageKey = (typeof STORAGE_KEYS)[number];
 
 interface SecureStorageOptions {
   readonly password: string;

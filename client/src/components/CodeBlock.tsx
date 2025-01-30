@@ -10,12 +10,7 @@ interface CodeBlockProps {
   children: React.ReactNode;
 }
 
-export const CodeBlock = memo(({ 
-  inline, 
-  className, 
-  children,
-  ...props 
-}: CodeBlockProps) => {
+export const CodeBlock = memo(({ inline, className, children, ...props }: CodeBlockProps) => {
   const [isCopied, setIsCopied] = useState(false);
   const match = /language-(\w+)/.exec(className || '');
 
@@ -24,14 +19,17 @@ export const CodeBlock = memo(({
     e.stopPropagation();
     console.log('Copying code block');
     if (!children) return;
-    
+
     const code = String(children).replace(/\n$/, '');
-    navigator.clipboard.writeText(code).then(() => {
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    }).catch(err => {
-      console.error('Failed to copy:', err);
-    });
+    navigator.clipboard
+      .writeText(code)
+      .then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy:', err);
+      });
   };
 
   if (!inline && match) {
@@ -69,7 +67,11 @@ export const CodeBlock = memo(({
     );
   }
 
-  return <code className={className} {...props}>{children}</code>;
+  return (
+    <code className={className} {...props}>
+      {children}
+    </code>
+  );
 });
 
 CodeBlock.displayName = 'CodeBlock';

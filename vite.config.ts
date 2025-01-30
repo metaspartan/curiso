@@ -24,5 +24,21 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    proxy: {
+      '/api/nvidia': {
+        target: 'https://integrate.api.nvidia.com/v1',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/nvidia/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Copy the authorization header from the original request
+            const authHeader = req.headers['authorization'];
+            if (authHeader) {
+              proxyReq.setHeader('Authorization', authHeader);
+            }
+          });
+        },
+      },
+    },
   }
 });

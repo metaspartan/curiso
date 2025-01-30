@@ -1,15 +1,15 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export function sanitizeChatMessage(message: any) {
   return {
     role: message.role,
     content: message.content,
-    ...(message.name ? { name: message.name } : {})
+    ...(message.name ? { name: message.name } : {}),
   };
 }
 
@@ -31,7 +31,7 @@ export function processThinkingContent(content: string) {
       blocks.push({
         type: 'normal',
         content: content.slice(currentIndex, match.index),
-        key: `normal-${currentIndex}`
+        key: `normal-${currentIndex}`,
       });
     }
 
@@ -39,11 +39,11 @@ export function processThinkingContent(content: string) {
     blocks.push({
       type: 'thinking',
       content: match[1].trim(),
-      key: `think-${match.index}`
+      key: `think-${match.index}`,
     });
 
     currentIndex = match.index + match[0].length;
-    
+
     // Remove the thinking block from the original content
     processedContent = processedContent.replace(match[0], '');
   }
@@ -52,31 +52,29 @@ export function processThinkingContent(content: string) {
     blocks.push({
       type: 'normal',
       content: processedContent.slice(currentIndex),
-      key: `normal-${currentIndex}`
+      key: `normal-${currentIndex}`,
     });
   }
 
   return {
     blocks: blocks.filter(block => block.content),
-    processedContent: processedContent.trim()
+    processedContent: processedContent.trim(),
   };
 }
 
 export function isEqual(a: any, b: any): boolean {
   if (a === b) return true;
-  
+
   if (Array.isArray(a) && Array.isArray(b)) {
-    return a.length === b.length && 
-           a.every((val, idx) => isEqual(val, b[idx]));
+    return a.length === b.length && a.every((val, idx) => isEqual(val, b[idx]));
   }
-  
+
   if (typeof a === 'object' && typeof b === 'object') {
     if (a === null || b === null) return a === b;
     const keysA = Object.keys(a);
     const keysB = Object.keys(b);
-    return keysA.length === keysB.length && 
-           keysA.every(key => isEqual(a[key], b[key]));
+    return keysA.length === keysB.length && keysA.every(key => isEqual(a[key], b[key]));
   }
-  
+
   return false;
 }

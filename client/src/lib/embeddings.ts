@@ -12,7 +12,7 @@ class EmbeddingService {
 
   private constructor() {
     env.useBrowserCache = true;
-    
+
     // // Prefer WebGPU if available
     // if ('gpu' in navigator) {
     // //   env.backends.onnx.preferredBackend = 'webgpu';
@@ -30,62 +30,58 @@ class EmbeddingService {
     if (this.initialized) return;
 
     if (this.isApiModel) {
-        // Check for API key
-        const settings = useStore.getState().settings;
-        if (!settings.openai.apiKey) {
-          throw new Error('OpenAI API key required for this model');
-        }
-        this.initialized = true;
-        return;
+      // Check for API key
+      const settings = useStore.getState().settings;
+      if (!settings.openai.apiKey) {
+        throw new Error('OpenAI API key required for this model');
+      }
+      this.initialized = true;
+      return;
     }
-  
+
     const store = useStore.getState();
     try {
       useStore.setState({
         settings: {
           ...store.settings,
-          rag: { ...store.settings.rag, modelStatus: 'loading' }
-        }
+          rag: { ...store.settings.rag, modelStatus: 'loading' },
+        },
       });
-  
+
       onModelStatus('loading', 0);
-  
-      this.model = await pipeline(
-        'feature-extraction',
-        this.modelId,
-        {
-          device: this.device as any,
-          dtype: this.dtype as any,
-          progress_callback: (progress: any) => {
-            console.log("Loading model:", progress);
-            console.log("Loading model progress.progress:", Math.round(progress.progress));
-            // if NaN set to 100
-            // const progressPercentage = isNaN(progress.progress) ? 100 : Math.round(progress.progress);
-            onModelStatus('loading', Math.round(progress.progress));
-          }
-        }
-      );
-      
+
+      this.model = await pipeline('feature-extraction', this.modelId, {
+        device: this.device as any,
+        dtype: this.dtype as any,
+        progress_callback: (progress: any) => {
+          console.log('Loading model:', progress);
+          console.log('Loading model progress.progress:', Math.round(progress.progress));
+          // if NaN set to 100
+          // const progressPercentage = isNaN(progress.progress) ? 100 : Math.round(progress.progress);
+          onModelStatus('loading', Math.round(progress.progress));
+        },
+      });
+
       this.initialized = true;
       useStore.setState({
         settings: {
           ...store.settings,
-          rag: { ...store.settings.rag, modelStatus: 'loaded' }
-        }
+          rag: { ...store.settings.rag, modelStatus: 'loaded' },
+        },
       });
-  
+
       onModelStatus('loaded');
     } catch (error) {
-      console.error("Failed to initialize embedding model:", error);
+      console.error('Failed to initialize embedding model:', error);
       useStore.setState({
         settings: {
           ...store.settings,
-          rag: { 
-            ...store.settings.rag, 
+          rag: {
+            ...store.settings.rag,
             modelStatus: 'error',
-            modelError: (error as Error).message 
-          }
-        }
+            modelError: (error as Error).message,
+          },
+        },
       });
       onModelStatus('error');
       throw error;
@@ -96,7 +92,7 @@ class EmbeddingService {
     this.modelId = modelId;
     this.isApiModel = modelId.startsWith('text-embedding-3');
     this.initialized = false;
-    
+
     if (!this.isApiModel) {
       this.model = null;
     }
@@ -132,11 +128,14 @@ class EmbeddingService {
     try {
       const cacheKeys = await caches.keys();
       console.log('Available caches:', cacheKeys);
-      
+
       for (const key of cacheKeys) {
         const cache = await caches.open(key);
         const requests = await cache.keys();
-        console.log(`Cache "${key}" contents:`, requests.map(req => req.url));
+        console.log(
+          `Cache "${key}" contents:`,
+          requests.map(req => req.url)
+        );
       }
     } catch (error) {
       console.error('Error inspecting cache:', error);
@@ -162,12 +161,12 @@ class EmbeddingService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${settings.openai.apiKey}`
+        Authorization: `Bearer ${settings.openai.apiKey}`,
       },
       body: JSON.stringify({
         input: text,
-        model: this.modelId
-      })
+        model: this.modelId,
+      }),
     });
 
     if (!response.ok) {
@@ -189,7 +188,7 @@ class EmbeddingService {
 
     const output = await this.model(text, {
       pooling: 'mean',
-      normalize: true
+      normalize: true,
     });
 
     const embeddings = Array.from(output.data);

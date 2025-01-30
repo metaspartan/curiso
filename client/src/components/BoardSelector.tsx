@@ -1,15 +1,15 @@
-import { Plus, Trash2, Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Plus, Trash2, Pencil } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useStore } from "@/lib/store";
-import { nanoid } from "nanoid";
-import { useState, useEffect } from "react";
+} from '@/components/ui/select';
+import { useStore } from '@/lib/store';
+import { nanoid } from 'nanoid';
+import { useState, useEffect } from 'react';
 
 export function BoardSelector() {
   const { settings, setSettings } = useStore();
@@ -26,12 +26,12 @@ export function BoardSelector() {
       id: nanoid(),
       name: `Board ${settings.boards.length + 1}`,
       nodes: [],
-      edges: []
+      edges: [],
     };
     setSettings({
       ...settings,
       boards: [...settings.boards, newBoard],
-      currentBoardId: newBoard.id
+      currentBoardId: newBoard.id,
     });
   };
 
@@ -41,7 +41,7 @@ export function BoardSelector() {
     setSettings({
       ...settings,
       boards: newBoards,
-      currentBoardId: newBoards[0].id
+      currentBoardId: newBoards[0].id,
     });
   };
 
@@ -49,11 +49,9 @@ export function BoardSelector() {
     if (!newName.trim()) return;
     setSettings({
       ...settings,
-      boards: settings.boards.map(board => 
-        board.id === boardId
-          ? { ...board, name: newName }
-          : board
-      )
+      boards: settings.boards.map(board =>
+        board.id === boardId ? { ...board, name: newName } : board
+      ),
     });
     setIsEditing(false);
   };
@@ -67,9 +65,9 @@ export function BoardSelector() {
               type="text"
               list="board-names"
               value={editName}
-              onChange={(e) => setEditName(e.target.value)}
+              onChange={e => setEditName(e.target.value)}
               onBlur={() => updateBoardName(currentBoard?.id || '', editName)}
-              onKeyDown={(e) => {
+              onKeyDown={e => {
                 if (e.key === 'Enter') {
                   updateBoardName(currentBoard?.id || '', editName);
                 }
@@ -82,33 +80,31 @@ export function BoardSelector() {
               autoFocus
             />
             <datalist id="board-names">
-              {settings.boards.map((board) => (
+              {settings.boards.map(board => (
                 <option key={board.id} value={board.name} />
               ))}
             </datalist>
           </div>
         ) : (
           <>
-            <Select 
+            <Select
               value={settings.currentBoardId}
-              onValueChange={(value) => setSettings({ ...settings, currentBoardId: value })}
+              onValueChange={value => setSettings({ ...settings, currentBoardId: value })}
             >
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select board">
-                  {currentBoard?.name}
-                </SelectValue>
+                <SelectValue placeholder="Select board">{currentBoard?.name}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {settings.boards.map((board) => (
+                {settings.boards.map(board => (
                   <SelectItem key={board.id} value={board.id}>
                     {board.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Button 
-              onClick={() => setIsEditing(true)} 
-              size="icon" 
+            <Button
+              onClick={() => setIsEditing(true)}
+              size="icon"
               variant="outline"
               className="h-10 w-10"
             >
@@ -120,9 +116,9 @@ export function BoardSelector() {
       <Button onClick={addBoard} size="icon" variant="outline">
         <Plus className="h-4 w-4" />
       </Button>
-      <Button 
-        onClick={deleteBoard} 
-        size="icon" 
+      <Button
+        onClick={deleteBoard}
+        size="icon"
         variant="outline"
         disabled={settings.boards.length <= 1}
       >
